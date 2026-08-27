@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RSJ Trip Tracker</title>
+<style>
+  :root{--ink:#1a1a1a;--paper:#fdfcf9;--line:#c9c4b8;--blue:#1565C0;--red:#B71C1C;--amber:#b7770d;--green:#1b5e20;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#e8e5de;font-family:Arial,Helvetica,sans-serif;color:var(--ink);font-size:13px;}
+  header{background:var(--ink);color:#fff;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:50;}
+  header .co{font-size:9px;color:#aaa;letter-spacing:2px;text-transform:uppercase;}
+  header .ttl{font-size:17px;font-weight:bold;}
+  .stats{display:flex;gap:16px;text-align:center;}
+  .stat .n{font-size:18px;font-weight:bold;font-family:"Courier New",monospace;}
+  .stat .l{font-size:8px;color:#aaa;letter-spacing:1px;text-transform:uppercase;}
+  .stat.red .n{color:#ff8a80;}.stat.amber .n{color:#ffd54f;}.stat.green .n{color:#a5d6a7;}
+  .who{background:#333;border:1px solid #666;color:#fff;padding:4px 8px;font-size:12px;}
+  .toolbar{background:#f0eee8;border-bottom:1.5px solid var(--ink);padding:8px 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .chip{border:1.5px solid var(--ink);background:#fff;padding:4px 12px;font-size:11px;font-weight:bold;cursor:pointer;}
+  .chip.on{background:var(--ink);color:#fff;}
+  .toolbar input[type=text]{border:1.5px solid var(--ink);padding:5px 8px;font-size:12px;width:190px;background:#fff;}
+  .spacer{flex:1;}
+  .btn{border:1.5px solid var(--ink);background:var(--ink);color:#fff;padding:6px 14px;font-size:12px;font-weight:bold;cursor:pointer;}
+  .btn.ghost{background:#fff;color:var(--ink);}
+  .btn.red{background:var(--red);border-color:var(--red);}
+  main{max-width:1300px;margin:16px auto;padding:0 14px 60px;}
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(370px,1fr));gap:14px;align-items:start;}
+  .card{background:var(--paper);border:2px solid var(--ink);box-shadow:4px 4px 0 #b3afa4;}
+  .card.market{border-style:dashed;}
+  .card.alert{border-color:var(--red);}
+  .card.ready{border-color:var(--green);}
+  .card-head{background:var(--ink);color:#fff;padding:7px 10px;display:flex;justify-content:space-between;gap:6px;align-items:flex-start;}
+  .card.ready .card-head{background:var(--green);}
+  .card.alert .card-head{background:var(--red);}
+  .lrno{font-family:"Courier New",monospace;font-size:15px;font-weight:bold;}
+  .vehno{font-size:11px;color:#ddd;font-family:"Courier New",monospace;letter-spacing:1px;}
+  .badge{font-size:8px;font-weight:bold;padding:1px 6px;border:1px solid #fff;letter-spacing:1px;}
+  .lane{padding:6px 10px;border-bottom:1px solid var(--line);font-size:11.5px;display:flex;justify-content:space-between;gap:8px;}
+  .lane b{font-weight:bold;}
+  .lane .meta{color:#555;text-align:right;white-space:nowrap;}
+  .drv{padding:4px 10px;border-bottom:1px solid var(--line);font-size:10.5px;color:#555;}
+  .drv a{color:var(--blue);text-decoration:none;font-weight:bold;}
+  /* progress */
+  .prog{padding:7px 10px;border-bottom:1px solid var(--line);}
+  .steps{display:flex;flex-wrap:wrap;gap:3px;}
+  .step{font-size:8px;text-transform:uppercase;letter-spacing:.3px;padding:2px 5px;border:1px solid var(--line);color:#999;background:#fff;}
+  .step.done{background:var(--green);border-color:var(--green);color:#fff;}
+  .step.now{border-color:var(--amber);color:var(--amber);font-weight:bold;}
+  .stamps{margin-top:5px;font-size:9.5px;color:#666;font-family:"Courier New",monospace;line-height:1.5;}
+  /* next action */
+  .nextbar{display:flex;gap:0;border-bottom:1px solid var(--line);}
+  .tapbtn{flex:1;background:var(--blue);color:#fff;border:none;padding:12px 8px;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;text-transform:uppercase;}
+  .tapbtn:hover{background:#0d47a1;}
+  .warnbtn{width:46px;background:#fff3cd;border:none;border-left:1px solid var(--line);font-size:16px;cursor:pointer;color:var(--amber);}
+  .warnbtn:hover{background:var(--amber);color:#fff;}
+  .det{padding:5px 10px;font-size:10.5px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;}
+  .det.red{background:#ffebee;color:var(--red);font-weight:bold;}
+  .disc{background:#fff3cd;border-left:3px solid var(--amber);padding:4px 8px;margin:5px 10px;font-size:10.5px;}
+  .disc b{color:var(--red);}
+  .disc button{float:right;font-size:9px;border:1px solid var(--ink);background:#fff;cursor:pointer;padding:1px 6px;}
+  /* docs */
+  .docs{padding:6px 10px;border-bottom:1px solid var(--line);display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .docs .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.5px;color:#777;font-weight:bold;}
+  .doc{font-size:9.5px;border:1.5px solid var(--line);background:#fff;padding:2px 7px;cursor:pointer;font-weight:bold;color:#999;}
+  .doc.on{background:var(--green);border-color:var(--green);color:#fff;}
+  .doclag{margin-left:auto;font-size:10px;font-family:"Courier New",monospace;}
+  .doclag.bad{color:var(--red);font-weight:bold;}
+  .card-actions{display:flex;border-top:1.5px solid var(--ink);}
+  .card-actions button{flex:1;border:none;background:#fff;padding:8px;font-size:10.5px;font-weight:bold;cursor:pointer;text-transform:uppercase;border-right:1px solid var(--line);}
+  .card-actions button:last-child{border-right:none;}
+  .card-actions button:hover{background:var(--ink);color:#fff;}
+  /* queue */
+  .queue{background:var(--paper);border:2px solid var(--ink);box-shadow:4px 4px 0 #b3afa4;margin-bottom:16px;}
+  .queue h3{background:var(--amber);color:#fff;padding:7px 10px;font-size:13px;letter-spacing:1px;}
+  table{width:100%;border-collapse:collapse;font-size:11.5px;}
+  th{background:#f0eee8;text-align:left;padding:5px 8px;font-size:9px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1.5px solid var(--ink);}
+  td{padding:5px 8px;border-bottom:1px solid var(--line);}
+  tr.first td{background:#e8f5e9;font-weight:bold;}
+  .pos{font-family:"Courier New",monospace;font-weight:bold;font-size:14px;}
+  .skip{font-size:9px;border:1px solid var(--ink);background:#fff;cursor:pointer;padding:1px 6px;}
+  .overlay{position:fixed;inset:0;background:rgba(20,20,20,.55);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:30px 10px;overflow:auto;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--paper);border:2px solid var(--ink);box-shadow:6px 6px 0 rgba(0,0,0,.35);width:100%;max-width:540px;}
+  .modal-head{background:var(--ink);color:#fff;padding:9px 14px;font-weight:bold;font-size:14px;display:flex;justify-content:space-between;}
+  .modal-head .x{cursor:pointer;color:#aaa;}
+  .modal-body{padding:14px;}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}
+  .fgrid .full{grid-column:1/-1;}
+  .fld label{display:block;font-size:8.5px;text-transform:uppercase;letter-spacing:.6px;color:#777;margin-bottom:3px;font-weight:bold;}
+  .fld input,.fld select,.fld textarea{width:100%;border:none;border-bottom:1.5px solid var(--ink);background:transparent;padding:4px 2px;font-size:13px;font-family:inherit;}
+  .fld textarea{border:1px solid var(--ink);min-height:44px;padding:5px;}
+  .modal-foot{padding:10px 14px;border-top:1.5px solid var(--ink);display:flex;justify-content:flex-end;gap:8px;background:#f0eee8;}
+  .empty-board{text-align:center;padding:50px 20px;color:#777;}
+  #loading{position:fixed;top:0;left:0;right:0;background:var(--amber);color:#fff;text-align:center;font-size:11px;font-weight:bold;padding:3px;z-index:200;display:none;letter-spacing:1px;}
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:8px 18px;font-size:12px;font-weight:bold;z-index:300;display:none;}
+</style>
+</head>
+<body>
+<div id="loading">SAVING…</div>
+<div id="toast"></div>
+<header>
+  <div>
+    <div class="co">RSJ Carriers Pvt. Ltd. — Follow-up Desk</div>
+    <div class="ttl">TRIP TRACKER <span style="font-size:10px;color:#aaa;font-weight:normal">live status · document chase · garage queue</span></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n" id="stMoving">0</div><div class="l">In Motion</div></div>
+    <div class="stat red"><div class="n" id="stDisc">0</div><div class="l">Discrepancies</div></div>
+    <div class="stat amber"><div class="n" id="stDocs">0</div><div class="l">Docs Pending</div></div>
+    <div class="stat green"><div class="n" id="stQueue">0</div><div class="l">In Garage</div></div>
+  </div>
+  <div>
+    <div style="font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Who is on duty</div>
+    <input class="who" id="who" placeholder="your name" onchange="saveWho()">
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="chip on" data-f="all">ALL</button>
+  <button class="chip" data-f="own">OWN FLEET</button>
+  <button class="chip" data-f="market">MARKET</button>
+  <button class="chip" data-f="alert">NEEDS ATTENTION</button>
+  <button class="chip" data-f="docs">DOCS PENDING</button>
+  <input type="text" id="search" placeholder="Search LR / vehicle / client / destination…">
+  <div class="spacer"></div>
+  <button class="btn ghost" onclick="load()">↻ REFRESH</button>
+  <button class="btn red" onclick="open_('ovRel')">＋ RELEASE TRUCK</button>
+</div>
+
+<main>
+  <div class="queue" id="queueBox" style="display:none">
+    <h3>GARAGE QUEUE — FIFO within suitability (position 1 gets next matching DO)</h3>
+    <table id="queueTbl"></table>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="empty-board" id="emptyMsg" style="display:none">No trucks in motion. Press <b>＋ RELEASE TRUCK</b> when an LR is handed over.</div>
+</main>
+
+<!-- RELEASE -->
+<div class="overlay" id="ovRel"><div class="modal">
+  <div class="modal-head"><span>RELEASE TRUCK — TRIP STARTS</span><span class="x" onclick="close_('ovRel')">✕</span></div>
+  <div class="modal-body"><div class="fgrid">
+    <div class="fld"><label>LR / Challan No * (as in ERP)</label><input id="rLr"></div>
+    <div class="fld"><label>DO No (from Strike Board)</label><input id="rDo"></div>
+    <div class="fld"><label>Own or Market *</label><select id="rOwn"><option value="OWN">Own Fleet</option><option value="MARKET">Market Truck</option></select></div>
+    <div class="fld"><label>Vehicle No *</label><input id="rVeh" placeholder="MH46CU5326"></div>
+    <div class="fld"><label>Driver Name</label><input id="rDrv"></div>
+    <div class="fld"><label>Driver Phone</label><input id="rPh"></div>
+    <div class="fld"><label>Broker (market only)</label><input id="rBrk"></div>
+    <div class="fld"><label>Client</label><input id="rCli"></div>
+    <div class="fld"><label>From</label><input id="rFrom" placeholder="JNPT / Hazira"></div>
+    <div class="fld"><label>Destination</label><input id="rDest" placeholder="Dahej / Ankleshwar / Surat"></div>
+    <div class="fld"><label>Size</label><select id="rSize"><option>20ft</option><option>40ft</option><option>N/A</option></select></div>
+    <div class="fld"><label>Type</label><select id="rType"><option>Container</option><option>ISO Tank</option><option>Open Top</option><option>High Cube</option><option>Reefer</option></select></div>
+    <div class="fld full"><label>Container / Tank No</label><input id="rCont"></div>
+  </div>
+  <div style="font-size:10px;color:#888;margin-top:8px">Own trucks get the full chain including garage out/in. Market trucks get the light chain and never enter the garage queue.</div>
+  </div>
+  <div class="modal-foot"><button class="btn ghost" onclick="close_('ovRel')">CANCEL</button><button class="btn" onclick="release()">RELEASE</button></div>
+</div></div>
+
+<!-- DISCREPANCY -->
+<div class="overlay" id="ovDisc"><div class="modal" style="max-width:460px">
+  <div class="modal-head"><span id="discTitle">REPORT DISCREPANCY</span><span class="x" onclick="close_('ovDisc')">✕</span></div>
+  <div class="modal-body"><div class="fgrid">
+    <div class="fld full"><label>Type *</label><select id="dType">
+      <option value="">— choose —</option>
+      <option>Detention at client</option>
+      <option>Breakdown</option>
+      <option>Empty yard refused — container damaged</option>
+      <option>Border / checkpost issue</option>
+      <option>Client delay — no labour</option>
+      <option>Document missing</option>
+      <option>Accident</option>
+      <option>Other</option></select></div>
+    <div class="fld full"><label>Details</label><textarea id="dDet"></textarea></div>
+    <div class="fld"><label>Cost Incurred (₹)</label><input id="dCost" type="number"></div>
+    <div class="fld"><label>Responsible</label><select id="dResp"><option>Client</option><option>Port / CFS</option><option>Empty Yard</option><option>Driver</option><option>Broker</option><option>RSJ</option><option>Other</option></select></div>
+    <div class="fld full"><label><input type="checkbox" id="dBill" style="width:auto"> Billable to client</label></div>
+  </div></div>
+  <div class="modal-foot"><button class="btn ghost" onclick="close_('ovDisc')">CANCEL</button><button class="btn" onclick="raiseDisc()">REPORT</button></div>
+</div></div>
+
+<!-- SKIP -->
+<div class="overlay" id="ovSkip"><div class="modal" style="max-width:420px">
+  <div class="modal-head"><span>SKIP IN QUEUE</span><span class="x" onclick="close_('ovSkip')">✕</span></div>
+  <div class="modal-body">
+    <div id="skipInfo" style="font-size:12px;margin-bottom:10px"></div>
+    <div class="fld"><label>Why is this truck being passed over? *</label><textarea id="skReason" placeholder="e.g. 20ft only, next DO is 40ft tank"></textarea></div>
+    <div style="font-size:10px;color:#888;margin-top:6px">Logged so queue order can be defended later.</div>
+  </div>
+  <div class="modal-foot"><button class="btn ghost" onclick="close_('ovSkip')">CANCEL</button><button class="btn" onclick="doSkip()">LOG SKIP</button></div>
+</div></div>
+
+<script>
+let TRIPS=[],QUEUE=[],SET={freeDet:24,docDays:3},filter='all',q='',ctx={};
+const fmtDT=d=>{if(!d)return'—';const x=new Date(d);return x.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+' '+x.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});};
+const esc=t=>(t||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hrsSince=d=>d?((new Date()-new Date(d))/36e5):0;
+function open_(id){document.getElementById(id).classList.add('open');}
+function close_(id){document.getElementById(id).classList.remove('open');}
+function busy(on){document.getElementById('loading').style.display=on?'block':'none';}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200);}
+function who(){return document.getElementById('who').value.trim();}
+function saveWho(){try{}catch(e){}}
+function run(fn,arg,msg){busy(true);
+  google.script.run.withSuccessHandler(j=>{const d=JSON.parse(j);TRIPS=d.trips;QUEUE=d.queue;SET=d.set;busy(false);render();if(msg)toast(msg);})
+  .withFailureHandler(e=>{busy(false);alert(e.message||e);})[fn](arg);}
+function load(){run('apiGetTrips');}
+
+function release(){
+  const g=i=>document.getElementById(i).value.trim();
+  const o={lr:g('rLr'),doNo:g('rDo'),own:g('rOwn'),veh:g('rVeh'),driver:g('rDrv'),phone:g('rPh'),broker:g('rBrk'),
+    client:g('rCli'),from:g('rFrom'),dest:g('rDest'),size:g('rSize'),type:g('rType'),cont:g('rCont'),exec:who()};
+  if(!o.lr||!o.veh){alert('LR No and Vehicle No are required.');return;}
+  ['rLr','rDo','rVeh','rDrv','rPh','rBrk','rCli','rFrom','rDest','rCont'].forEach(i=>document.getElementById(i).value='');
+  close_('ovRel');run('apiReleaseTrip',JSON.stringify(o),'Truck released');
+}
+function tap(tripId,cp){
+  if(!who()){alert('Type your name in "Who is on duty" first — every stamp is signed.');return;}
+  run('apiCheckpoint',JSON.stringify({tripId,cp,exec:who()}),cp+' stamped');
+}
+function openDisc(tripId,at,lr){ctx={tripId,at};document.getElementById('discTitle').textContent='DISCREPANCY — '+lr;open_('ovDisc');}
+function raiseDisc(){
+  const g=i=>document.getElementById(i).value.trim();
+  if(!g('dType')){alert('Choose a discrepancy type.');return;}
+  const o={tripId:ctx.tripId,at:ctx.at,type:g('dType'),details:g('dDet'),cost:g('dCost'),
+    resp:g('dResp'),billable:document.getElementById('dBill').checked,exec:who()};
+  ['dDet','dCost'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('dType').value='';document.getElementById('dBill').checked=false;
+  close_('ovDisc');run('apiRaiseDisc',JSON.stringify(o),'Discrepancy logged');
+}
+function resolveDisc(id){run('apiResolveDisc',id,'Resolved');}
+function toggleDoc(tripId,doc,on){run('apiSetDoc',JSON.stringify({tripId,doc,on:!on}));}
+function closeTrip(tripId){if(confirm('Close this trip? It moves out of the live board into the register as BILLING READY.'))run('apiCloseTrip',tripId,'Closed — billing ready');}
+function copyStatus(t){
+  const done=t.chain.filter(c=>t.stamps[c]);
+  const last=done.length?done[done.length-1]:'released';
+  const txt=t.veh+' / LR '+t.lr+' — '+(t.client||'')+' '+(t.dest||'')+' : '+last.toLowerCase()+' at '+fmtDT(t.stamps[last]||t.released)
+    +(t.next?'. Next: '+t.next.toLowerCase()+'.':'. Trip complete.')
+    +(t.openDisc.length?' ISSUE: '+t.openDisc.map(d=>d.type).join(', ')+'.':'');
+  navigator.clipboard.writeText(txt).then(()=>toast('Status copied — paste to RM'),()=>prompt('Copy this:',txt));
+}
+function openSkip(veh,pos){ctx={veh};document.getElementById('skipInfo').innerHTML='Passing over <b>'+esc(veh)+'</b> at position '+pos+'.';open_('ovSkip');}
+function doSkip(){
+  const r=document.getElementById('skReason').value.trim();
+  if(!r){alert('Reason is required.');return;}
+  document.getElementById('skReason').value='';
+  close_('ovSkip');run('apiLogSkip',JSON.stringify({veh:ctx.veh,reason:r,exec:who()}),'Skip logged');
+}
+
+function docsPending(t){return !(t.docs.lr&&t.docs.pod&&t.docs.wt&&t.docs.eway);}
+function delivered(t){return !!t.stamps['GATE OUT'];}
+
+function render(){
+  const board=document.getElementById('board');board.innerHTML='';
+  let shown=0,moving=0,disc=0,docs=0;
+  TRIPS.forEach(t=>{
+    moving++;disc+=t.openDisc.length;if(docsPending(t)&&delivered(t))docs++;
+    const hay=(t.lr+' '+t.veh+' '+t.client+' '+t.dest+' '+t.driver+' '+t.doNo).toLowerCase();
+    if(q&&!hay.includes(q))return;
+    const alert_=t.openDisc.length>0||(delivered(t)&&docsPending(t)&&hrsSince(t.stamps['GATE OUT'])/24>SET.docDays);
+    if(filter==='own'&&t.own!=='OWN')return;
+    if(filter==='market'&&t.own!=='MARKET')return;
+    if(filter==='alert'&&!alert_)return;
+    if(filter==='docs'&&!(delivered(t)&&docsPending(t)))return;
+    shown++;
+    const ready=!t.next&&!docsPending(t);
+    let steps='';
+    t.chain.forEach(c=>{steps+='<div class="step'+(t.stamps[c]?' done':(c===t.next?' now':''))+'">'+c.replace('CONTAINER ','').replace('EMPTY ','')+'</div>';});
+    let stampTxt=t.chain.filter(c=>t.stamps[c]).map(c=>c+' · '+fmtDT(t.stamps[c])).join('<br>');
+    // detention
+    let detHtml='';
+    if(t.stamps['GATE IN']){
+      const h=t.stamps['GATE OUT']?t.detHrs:hrsSince(t.stamps['GATE IN']);
+      const bad=h>SET.freeDet;
+      detHtml='<div class="det'+(bad?' red':'')+'"><span>At client since gate-in</span><span>'+h.toFixed(1)+' hrs'+(bad?' — OVER '+SET.freeDet+'H FREE':'')+'</span></div>';
+    }
+    let discHtml='';
+    t.openDisc.forEach(d=>{discHtml+='<div class="disc"><b>'+esc(d.type)+'</b> <button onclick="resolveDisc(\''+d.id+'\')">resolve</button><br>'+esc(d.details||'')+'<div style="font-size:9px;color:#888">'+fmtDT(d.at)+'</div></div>';});
+    // docs
+    const dd=t.docs;
+    let lag='';
+    if(delivered(t)){
+      const days=hrsSince(t.stamps['GATE OUT'])/24;
+      if(docsPending(t))lag='<span class="doclag'+(days>SET.docDays?' bad':'')+'">'+days.toFixed(0)+'d since delivery</span>';
+      else lag='<span class="doclag" style="color:var(--green)">complete</span>';
+    }
+    const docHtml='<div class="docs"><span class="lbl">Docs</span>'
+      +['lr','pod','wt','eway'].map((k,i)=>'<button class="doc'+(dd[k]?' on':'')+'" onclick="toggleDoc(\''+t.id+'\',\''+k+'\','+dd[k]+')">'+['LR','POD','WEIGH','E-WAY'][i]+'</button>').join('')+lag+'</div>';
+    const next=t.next?'<div class="nextbar"><button class="tapbtn" onclick="tap(\''+t.id+'\',\''+t.next+'\')">✓ '+t.next+'</button><button class="warnbtn" title="Report discrepancy" onclick="openDisc(\''+t.id+'\',\''+(t.next||'')+'\',\''+esc(t.lr)+'\')">⚠</button></div>'
+      :'<div class="nextbar"><button class="tapbtn" style="background:var(--green)" onclick="closeTrip(\''+t.id+'\')">'+(docsPending(t)?'DOCS PENDING — CHASE':'CLOSE — BILLING READY')+'</button><button class="warnbtn" onclick="openDisc(\''+t.id+'\',\'AFTER TRIP\',\''+esc(t.lr)+'\')">⚠</button></div>';
+    const card=document.createElement('div');
+    card.className='card'+(t.own==='MARKET'?' market':'')+(alert_?' alert':ready?' ready':'');
+    card.innerHTML='<div class="card-head"><div><div class="lrno">LR '+esc(t.lr)+'</div><div class="vehno">'+esc(t.veh)+'</div></div>'
+      +'<div style="text-align:right"><div class="badge">'+t.own+'</div><div style="font-size:9px;color:#ddd;margin-top:3px">'+esc(t.doNo||'')+'</div></div></div>'
+      +'<div class="lane"><div><b>'+esc(t.from||'—')+' → '+esc(t.dest||'—')+'</b><br><span style="font-size:10px;color:#666">'+esc(t.client||'')+'</span></div>'
+      +'<div class="meta">'+esc(t.size)+' '+esc(t.type)+(t.cont?'<br>'+esc(t.cont):'')+'</div></div>'
+      +(t.driver||t.phone?'<div class="drv">'+esc(t.driver||'')+(t.phone?' · <a href="tel:'+esc(t.phone)+'">'+esc(t.phone)+'</a>':'')+(t.broker?' · via '+esc(t.broker):'')+'</div>':'')
+      +'<div class="prog"><div class="steps">'+steps+'</div>'+(stampTxt?'<div class="stamps">'+stampTxt+'</div>':'')+'</div>'
+      +detHtml+discHtml+next+docHtml
+      +'<div class="card-actions"><button onclick=\'copyStatus('+JSON.stringify(t).replace(/'/g,"&#39;")+')\'>📋 Copy status for RM</button></div>';
+    board.appendChild(card);
+  });
+  document.getElementById('emptyMsg').style.display=shown?'none':'block';
+  document.getElementById('stMoving').textContent=moving;
+  document.getElementById('stDisc').textContent=disc;
+  document.getElementById('stDocs').textContent=docs;
+  document.getElementById('stQueue').textContent=QUEUE.length;
+  // queue
+  const qb=document.getElementById('queueBox'),qt=document.getElementById('queueTbl');
+  if(QUEUE.length){
+    qb.style.display='block';
+    qt.innerHTML='<tr><th>#</th><th>Vehicle</th><th>Model</th><th>Size</th><th>Type</th><th>In garage since</th><th>Waiting</th><th></th></tr>'
+    +QUEUE.map((v,i)=>'<tr class="'+(i===0?'first':'')+'"><td class="pos">'+(i+1)+'</td><td>'+esc(v.veh)+'</td><td>'+esc(v.model||'—')+'</td><td>'+esc(v.sizeCap||'—')+'</td><td>'+esc(v.typeCap||'—')+'</td><td>'+fmtDT(v.since)+'</td><td>'+(hrsSince(v.since)/24).toFixed(1)+' d</td><td><button class="skip" onclick="openSkip(\''+esc(v.veh)+'\','+(i+1)+')">skip</button></td></tr>').join('');
+  }else qb.style.display='none';
+}
+document.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));ch.classList.add('on');filter=ch.dataset.f;render();});
+document.getElementById('search').oninput=e=>{q=e.target.value.toLowerCase();render();};
+load();
+</script>
+</body>
+</html>

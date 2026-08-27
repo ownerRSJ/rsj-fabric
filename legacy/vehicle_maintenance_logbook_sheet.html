@@ -1,0 +1,491 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .page {
+    width: 620px;
+    background: #fff;
+    color: #000;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    border: 2px solid #000;
+    margin: 1.5rem auto;
+    box-shadow: 4px 4px 0 #888;
+  }
+  .page-header {
+    background: #1a1a1a;
+    color: #fff;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .page-header .company { font-size: 8px; color: #aaa; letter-spacing: 1px; text-transform: uppercase; }
+  .page-header .title { font-size: 14px; font-weight: bold; margin-top: 2px; }
+  .page-header .ref { text-align: right; }
+  .page-header .ref-label { font-size: 8px; color: #aaa; text-transform: uppercase; }
+  .page-header .ref-no { font-size: 16px; font-weight: bold; }
+  .sub-header {
+    background: #f0f0f0;
+    border-bottom: 1.5px solid #000;
+    padding: 5px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+    color: #444;
+  }
+  .section {
+    border-bottom: 1.5px solid #000;
+    padding: 8px 12px;
+  }
+  .section:last-child { border-bottom: none; }
+  .section-title {
+    font-size: 8px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 7px;
+    padding-bottom: 3px;
+    border-bottom: 0.5px solid #ccc;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 16px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px 16px; }
+  .field { margin-bottom: 2px; }
+  .field-label {
+    font-size: 7.5px;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 2px;
+  }
+  .field-line {
+    border-bottom: 1px solid #000;
+    min-height: 14px;
+    width: 100%;
+  }
+  .field-line-dashed {
+    border-bottom: 1px dashed #999;
+    min-height: 14px;
+    width: 100%;
+  }
+  .checkbox-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 3px;
+  }
+  .cb {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 9px;
+  }
+  .cb-box {
+    width: 9px; height: 9px;
+    border: 1px solid #000;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .cb-box.checked::after { content: "✓"; font-size: 8px; line-height: 9px; display: block; text-align: center; font-weight: bold; }
+  table.parts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+    margin-top: 4px;
+  }
+  table.parts-table th {
+    background: #1a1a1a;
+    color: #fff;
+    padding: 3px 6px;
+    text-align: left;
+    font-weight: bold;
+    border: 1px solid #000;
+    font-size: 8px;
+    text-transform: uppercase;
+  }
+  table.parts-table td {
+    border: 1px solid #ccc;
+    padding: 3px 6px;
+    height: 16px;
+  }
+  table.parts-table tr.total-row td {
+    background: #f0f0f0;
+    font-weight: bold;
+    border: 1px solid #000;
+  }
+  .large-box {
+    border: 1px solid #000;
+    min-height: 28px;
+    width: 100%;
+    margin-top: 3px;
+    padding: 3px;
+  }
+  .sig-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .sig-item { text-align: center; }
+  .sig-line { border-bottom: 1px solid #000; height: 22px; margin-bottom: 3px; }
+  .sig-label { font-size: 8px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+  .scrap-token {
+    background: #fff3cd;
+    border: 1.5px solid #f39c12;
+    padding: 6px 10px;
+    margin-top: 6px;
+    font-size: 9px;
+  }
+  .scrap-token .token-title {
+    font-weight: bold;
+    font-size: 9px;
+    color: #c0392b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .footer {
+    background: #1a1a1a;
+    color: #aaa;
+    padding: 4px 12px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+  }
+  .alert-bar {
+    background: #e74c3c;
+    color: #fff;
+    padding: 3px 12px;
+    font-size: 8px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+  .outer-wrap {
+    background: var(--color-background-secondary);
+    padding: 1.5rem;
+  }
+  .top-note {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .top-note p {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin: 0 0 3px;
+  }
+</style>
+
+<div class="outer-wrap">
+
+  <div class="top-note">
+    <p>One page per maintenance event — printed on A4, filled by workshop manager, filed in vehicle folder</p>
+    <p>Below is a filled sample so you can see how it looks in real use</p>
+  </div>
+
+  <div class="page">
+
+    <!-- HEADER -->
+    <div class="page-header">
+      <div>
+        <div class="company">RSJ Carriers Pvt. Ltd. — Fleet Maintenance Division</div>
+        <div class="title">VEHICLE MAINTENANCE LOGBOOK ENTRY</div>
+      </div>
+      <div class="ref">
+        <div class="ref-label">Entry No.</div>
+        <div class="ref-no">ML-0047</div>
+      </div>
+    </div>
+
+    <!-- SUB HEADER -->
+    <div class="sub-header">
+      <span><b>Vehicle No:</b> MH01AB1234 &nbsp;|&nbsp; <b>Model:</b> Tata 4018 &nbsp;|&nbsp; <b>Vehicle ID:</b> VH-007</span>
+      <span><b>Date of Entry:</b> 12-Jan-2026 &nbsp;|&nbsp; <b>Page:</b> 3 of ongoing</span>
+    </div>
+
+    <!-- SECTION 1: EVENT IDENTITY -->
+    <div class="section">
+      <div class="section-title">1. Maintenance Event Identity</div>
+      <div class="grid-4">
+        <div class="field">
+          <div class="field-label">Date of Maintenance *</div>
+          <div class="field-line" style="font-size:10px; font-weight:bold; padding-bottom:1px;">12-Jan-2026</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Odometer at Event (KM) *</div>
+          <div class="field-line" style="font-size:10px; font-weight:bold; padding-bottom:1px;">45,230 KM</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Linked Trip / LR No.</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">LR-20260112-089</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Parts Issue Reg. No.</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">PI-0034</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <div class="field-label">Type of Maintenance *</div>
+        <div class="checkbox-row">
+          <div class="cb"><div class="cb-box checked"></div> Scheduled Service</div>
+          <div class="cb"><div class="cb-box"></div> Breakdown Repair</div>
+          <div class="cb"><div class="cb-box"></div> Tyre Change</div>
+          <div class="cb"><div class="cb-box"></div> Accident Repair</div>
+          <div class="cb"><div class="cb-box"></div> Pre-Trip Check</div>
+          <div class="cb"><div class="cb-box"></div> Other: ___________</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: WORKSHOP DETAILS -->
+    <div class="section" style="background:#f9f9f9;">
+      <div class="section-title">2. Workshop Details</div>
+      <div class="grid-3">
+        <div class="field">
+          <div class="field-label">Workshop Name *</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">Raju Motors, Turbhe</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Workshop Contact No.</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">98XXXXXXXX</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Workshop Type</div>
+          <div class="checkbox-row" style="margin-top:2px;">
+            <div class="cb"><div class="cb-box checked"></div> Own Yard</div>
+            <div class="cb"><div class="cb-box"></div> Outside</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Time In</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">09:30 AM</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Time Out</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">01:45 PM</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Total Downtime (Hrs)</div>
+          <div class="field-line" style="font-size:10px; font-weight:bold; padding-bottom:1px;">4.25 Hrs</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: PARTS USED -->
+    <div class="section">
+      <div class="section-title">3. Parts & Materials Used (Each Row = One Item Issued from Warehouse)</div>
+      <table class="parts-table">
+        <tr>
+          <th style="width:12%;">Item SKU</th>
+          <th style="width:28%;">Item Description</th>
+          <th style="width:14%;">Brand</th>
+          <th style="width:8%;">Qty</th>
+          <th style="width:13%;">Unit Cost (₹)</th>
+          <th style="width:13%;">Total Cost (₹)</th>
+          <th style="width:12%;">Scrap Token</th>
+        </tr>
+        <tr>
+          <td>TY-1020</td>
+          <td>Tyre 10.00x20 — Rear Left Outer</td>
+          <td>Apollo</td>
+          <td>1</td>
+          <td>14,500</td>
+          <td>14,500</td>
+          <td style="text-align:center; font-weight:bold; color:#c0392b;">YES — ST-089</td>
+        </tr>
+        <tr>
+          <td>EO-15W40</td>
+          <td>Engine Oil 15W40</td>
+          <td>Castrol</td>
+          <td>6 L</td>
+          <td>380</td>
+          <td>2,280</td>
+          <td style="text-align:center; color:#888;">No</td>
+        </tr>
+        <tr>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="5" style="text-align:right; padding-right:8px;">Total Parts Cost</td>
+          <td style="font-weight:bold;">16,780</td>
+          <td></td>
+        </tr>
+      </table>
+
+      <!-- SCRAP TOKEN ALERT -->
+      <div class="scrap-token">
+        <div class="token-title">⚠ Scrap Gate Lock — Action Required Before Trip Closure</div>
+        <div class="grid-3" style="gap: 6px 16px;">
+          <div class="field">
+            <div class="field-label">Scrap Token No.</div>
+            <div class="field-line" style="font-size:10px; font-weight:bold; padding-bottom:1px;">ST-089</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Old Part Description</div>
+            <div class="field-line" style="font-size:10px; padding-bottom:1px;">Used Tyre — Rear Left</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Old Part Serial / Stamp No.</div>
+            <div class="field-line" style="font-size:10px; padding-bottom:1px;">TY-SRL-2209-RL</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Scrap Returned to Yard</div>
+            <div class="checkbox-row" style="margin-top:2px;">
+              <div class="cb"><div class="cb-box checked"></div> Yes</div>
+              <div class="cb"><div class="cb-box"></div> No — Reason: ______</div>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">Scrap Disposal Decision</div>
+            <div class="checkbox-row" style="margin-top:2px;">
+              <div class="cb"><div class="cb-box"></div> Sell</div>
+              <div class="cb"><div class="cb-box checked"></div> Retread</div>
+              <div class="cb"><div class="cb-box"></div> Discard</div>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">Salvage Value Recovered (₹)</div>
+            <div class="field-line" style="font-size:10px; padding-bottom:1px;">0 (sent for retreading)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: LABOUR & TOTAL COST -->
+    <div class="section" style="background:#f9f9f9;">
+      <div class="section-title">4. Labour & Total Cost Summary</div>
+      <div class="grid-4">
+        <div class="field">
+          <div class="field-label">Labour Charges (₹)</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">1,200</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Parts Cost (₹)</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">16,780</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Other Charges (₹)</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">0</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Total Event Cost (₹) *</div>
+          <div class="field-line" style="font-size:11px; font-weight:bold; padding-bottom:1px; border-bottom: 2px solid #000;">17,980</div>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:8px;">
+        <div class="field">
+          <div class="field-label">Bill / Receipt No. (if outside workshop)</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">N/A — Own Yard</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Receipt Attached</div>
+          <div class="checkbox-row" style="margin-top:2px;">
+            <div class="cb"><div class="cb-box"></div> Yes</div>
+            <div class="cb"><div class="cb-box checked"></div> No (Own Yard — no bill)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 5: WORK DESCRIPTION -->
+    <div class="section">
+      <div class="section-title">5. Work Description & Mechanic Notes</div>
+      <div class="field-label" style="margin-bottom:3px;">Describe work done in simple words</div>
+      <div class="large-box" style="min-height:36px; font-size:10px; padding:4px;">
+        Rear left outer tyre was fully worn out. Replaced with new Apollo 10.00x20. Engine oil also changed as per schedule. Old tyre sent for retreading to Shiv Tyre Works.
+      </div>
+      <div style="margin-top:8px;" class="grid-2">
+        <div class="field">
+          <div class="field-label">Next Service Due at (KM)</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">50,000 KM</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Next Service Due by (Date)</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">01-Apr-2026</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 6: CUMULATIVE RUNNING TOTAL -->
+    <div class="section" style="background:#fff8e1; border-left: 3px solid #f39c12;">
+      <div class="section-title" style="color:#b7770d;">6. Cumulative Maintenance Cost for This Vehicle (Running Total)</div>
+      <div class="grid-4">
+        <div class="field">
+          <div class="field-label">Cost up to Previous Entry (₹)</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">8,450</div>
+        </div>
+        <div class="field">
+          <div class="field-label">This Entry Cost (₹)</div>
+          <div class="field-line" style="font-size:10px; padding-bottom:1px;">17,980</div>
+        </div>
+        <div class="field">
+          <div class="field-label">New Running Total (₹) *</div>
+          <div class="field-line" style="font-size:11px; font-weight:bold; padding-bottom:1px; border-bottom: 2px solid #000;">26,430</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Maintenance Cost per KM</div>
+          <div class="field-line" style="font-size:10px; font-weight:bold; padding-bottom:1px;">₹ 0.58 / KM</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 7: SIGNATURES -->
+    <div class="section">
+      <div class="section-title">7. Authorisation & Signatures</div>
+      <div class="sig-block">
+        <div class="sig-item">
+          <div class="sig-line"></div>
+          <div class="sig-label">Mechanic / Workshop Manager</div>
+          <div style="font-size:8px; color:#777; margin-top:2px;">Name: _______________</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-line"></div>
+          <div class="sig-label">Traffic Head / Supervisor</div>
+          <div style="font-size:8px; color:#777; margin-top:2px;">Name: _______________</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-line"></div>
+          <div class="sig-label">Accounts (Cost Verified)</div>
+          <div style="font-size:8px; color:#777; margin-top:2px;">Name: _______________</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <span>RSJ Carriers Pvt. Ltd. | +91 9324243135 | info@rsjcarriers.com</span>
+      <span>Entry No: ML-0047 | Vehicle: MH01AB1234 | Date: 12-Jan-2026</span>
+    </div>
+
+  </div>
+
+  <!-- GOOGLE SHEETS MAPPING NOTE -->
+  <div style="width:620px; margin: 0 auto; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px; margin-top: 0;">
+    <div style="font-size:13px; font-weight:500; color:var(--color-text-primary); margin-bottom:12px;">How this physical sheet maps to Google Sheets registers</div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size:12px;">
+      <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:10px;">
+        <div style="font-weight:500; color:var(--color-text-primary); margin-bottom:4px;">Physical Sheet Section</div>
+        <div style="color:var(--color-text-secondary);">Section 1 — Event Identity</div>
+        <div style="color:var(--color-text-secondary);">Section 2 — Workshop Details</div>
+        <div style="color:var(--color-text-secondary);">Section 3 — Parts Used</div>
+        <div style="color:var(--color-text-secondary);">Section 3 — Scrap Token</div>
+        <div style="color:var(--color-text-secondary);">Section 4 — Cost Summary</div>
+        <div style="color:var(--color-text-secondary);">Section 6 — Running Total</div>
+      </div>
+      <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:10px;">
+        <div style="font-weight:500; color:var(--color-text-primary); margin-bottom:4px;">Goes Into Google Sheets Register</div>
+        <div style="color:var(--color-text-secondary);">→ Maintenance Logbook Register (Master 3)</div>
+        <div style="color:var(--color-text-secondary);">→ Maintenance Logbook Register (Master 3)</div>
+        <div style="color:var(--color-text-secondary);">→ Parts Issue Register (Master 3)</div>
+        <div style="color:var(--color-text-secondary);">→ Scrap Inventory Register (Master 3)</div>
+        <div style="color:var(--color-text-secondary);">→ Trip Expense Register (Master 1)</div>
+        <div style="color:var(--color-text-secondary);">→ Vehicle Master (auto-calculated)</div>
+      </div>
+    </div>
+  </div>
+
+</div>

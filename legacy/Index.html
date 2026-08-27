@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RSJ DO Strike Board</title>
+<style>
+  :root{--ink:#1a1a1a;--paper:#fdfcf9;--line:#c9c4b8;--blue:#1565C0;--red:#B71C1C;--amber:#b7770d;--green:#1b5e20;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#e8e5de;font-family:Arial,Helvetica,sans-serif;color:var(--ink);font-size:13px;}
+  header{background:var(--ink);color:#fff;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:50;}
+  header .co{font-size:9px;color:#aaa;letter-spacing:2px;text-transform:uppercase;}
+  header .ttl{font-size:17px;font-weight:bold;}
+  .stats{display:flex;gap:18px;text-align:center;}
+  .stat .n{font-size:18px;font-weight:bold;font-family:"Courier New",monospace;}
+  .stat .l{font-size:8px;color:#aaa;letter-spacing:1px;text-transform:uppercase;}
+  .stat.red .n{color:#ff8a80;}.stat.amber .n{color:#ffd54f;}.stat.green .n{color:#a5d6a7;}
+  .toolbar{background:#f0eee8;border-bottom:1.5px solid var(--ink);padding:8px 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .chip{border:1.5px solid var(--ink);background:#fff;padding:4px 12px;font-size:11px;font-weight:bold;cursor:pointer;letter-spacing:.5px;}
+  .chip.on{background:var(--ink);color:#fff;}
+  .toolbar input[type=text]{border:1.5px solid var(--ink);padding:5px 8px;font-size:12px;width:200px;background:#fff;}
+  .spacer{flex:1;}
+  .btn{border:1.5px solid var(--ink);background:var(--ink);color:#fff;padding:6px 14px;font-size:12px;font-weight:bold;cursor:pointer;letter-spacing:.5px;}
+  .btn.ghost{background:#fff;color:var(--ink);}
+  .btn.red{background:var(--red);border-color:var(--red);}
+  main{max-width:1240px;margin:16px auto;padding:0 14px 60px;}
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;align-items:start;}
+  .card{background:var(--paper);border:2px solid var(--ink);box-shadow:4px 4px 0 #b3afa4;}
+  .card.placed{border-color:var(--green);}
+  .card.overdue{border-color:var(--red);}
+  .card-head{background:var(--ink);color:#fff;padding:7px 10px;display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+  .card.placed .card-head{background:var(--green);}
+  .card.overdue .card-head{background:var(--red);}
+  .do-no{font-family:"Courier New",monospace;font-size:15px;font-weight:bold;}
+  .client{font-size:9px;color:#ddd;letter-spacing:.5px;text-transform:uppercase;margin-top:1px;}
+  .needby{text-align:right;font-size:9px;color:#ddd;text-transform:uppercase;letter-spacing:.5px;}
+  .needby b{display:block;font-size:12px;color:#fff;font-family:"Courier New",monospace;letter-spacing:0;text-transform:none;}
+  .lane{padding:7px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;font-size:11.5px;}
+  .lane .route{font-weight:bold;}
+  .lane .meta{color:#555;white-space:nowrap;text-align:right;}
+  .placebar{padding:5px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#555;}
+  .pips{display:flex;gap:3px;flex-wrap:wrap;}
+  .pip{width:14px;height:14px;border:1.5px solid var(--ink);background:#fff;}
+  .pip.f{background:var(--green);border-color:var(--green);}
+  .strikes{padding:4px 0;}
+  .s-empty{padding:10px;font-size:11px;color:#888;font-style:italic;}
+  .strike{border-bottom:1px dashed var(--line);padding:6px 10px;}
+  .strike:last-child{border-bottom:none;}
+  .s-top{display:flex;justify-content:space-between;gap:6px;align-items:baseline;}
+  .s-broker{font-weight:bold;font-size:12.5px;color:var(--blue);}
+  .s-exec{font-size:10px;color:#666;}
+  .s-rate{font-family:"Courier New",monospace;font-weight:bold;font-size:14px;white-space:nowrap;}
+  .s-line2{display:flex;justify-content:space-between;gap:6px;margin-top:2px;font-size:10.5px;color:#555;flex-wrap:wrap;}
+  .s-time{font-family:"Courier New",monospace;}
+  .s-margin{font-family:"Courier New",monospace;font-weight:bold;}
+  .s-margin.pos{color:var(--green);}.s-margin.neg{color:var(--red);}
+  .s-circ{margin-top:3px;font-size:10.5px;color:#444;background:#f4f2ec;border-left:3px solid var(--line);padding:3px 6px;font-style:italic;}
+  .s-tags{display:flex;gap:5px;margin-top:4px;align-items:center;flex-wrap:wrap;}
+  .tag{font-size:8.5px;font-weight:bold;letter-spacing:.5px;padding:1px 6px;border:1px solid;text-transform:uppercase;}
+  .tag.live{color:var(--green);border-color:var(--green);}
+  .tag.expired{color:var(--red);border-color:var(--red);}
+  .tag.awarded{color:#fff;background:var(--green);border-color:var(--green);}
+  .award-btn{margin-left:auto;font-size:9.5px;padding:2px 8px;border:1.5px solid var(--ink);background:#fff;font-weight:bold;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;}
+  .award-btn:hover{background:var(--ink);color:#fff;}
+  .stamp-row{padding:8px 10px;border-top:1.5px solid var(--ink);display:flex;align-items:center;gap:10px;background:#f7f5ef;}
+  .stamp{border:2.5px solid var(--green);color:var(--green);font-weight:bold;font-size:12px;letter-spacing:2px;padding:3px 10px;transform:rotate(-4deg);text-transform:uppercase;font-family:"Courier New",monospace;}
+  .stamp.partial{border-color:var(--amber);color:var(--amber);}
+  .stamp-note{font-size:10px;color:#555;}
+  .card-actions{display:flex;border-top:1.5px solid var(--ink);}
+  .card-actions button{flex:1;border:none;background:#fff;padding:8px;font-size:11px;font-weight:bold;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;border-right:1px solid var(--line);}
+  .card-actions button:last-child{border-right:none;}
+  .card-actions button:hover{background:var(--ink);color:#fff;}
+  .overlay{position:fixed;inset:0;background:rgba(20,20,20,.55);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:30px 10px;overflow:auto;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--paper);border:2px solid var(--ink);box-shadow:6px 6px 0 rgba(0,0,0,.35);width:100%;max-width:560px;}
+  .modal-head{background:var(--ink);color:#fff;padding:9px 14px;font-weight:bold;font-size:14px;display:flex;justify-content:space-between;}
+  .modal-head .x{cursor:pointer;color:#aaa;font-size:16px;line-height:1;}
+  .modal-body{padding:14px;}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}
+  .fgrid .full{grid-column:1/-1;}
+  .fld label{display:block;font-size:8.5px;text-transform:uppercase;letter-spacing:.6px;color:#777;margin-bottom:3px;font-weight:bold;}
+  .fld input,.fld select,.fld textarea{width:100%;border:none;border-bottom:1.5px solid var(--ink);background:transparent;padding:4px 2px;font-size:13px;font-family:inherit;}
+  .fld textarea{border:1px solid var(--ink);min-height:44px;padding:5px;}
+  .fld input:focus,.fld select:focus,.fld textarea:focus{outline:2px solid var(--blue);outline-offset:1px;}
+  .modal-foot{padding:10px 14px;border-top:1.5px solid var(--ink);display:flex;justify-content:flex-end;gap:8px;background:#f0eee8;}
+  .hint{font-size:10px;color:#888;margin-top:6px;}
+  .headonly{color:var(--red);font-weight:bold;}
+  .empty-board{text-align:center;padding:60px 20px;color:#777;font-size:14px;}
+  #loading{position:fixed;top:0;left:0;right:0;background:var(--amber);color:#fff;text-align:center;font-size:11px;font-weight:bold;padding:3px;z-index:200;display:none;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div id="loading">SAVING…</div>
+<header>
+  <div>
+    <div class="co">RSJ Carriers Pvt. Ltd. — Traffic Head Console</div>
+    <div class="ttl">DO STRIKE BOARD <span style="font-size:10px;color:#aaa;font-weight:normal">auto-saves to Google Sheet</span></div>
+  </div>
+  <div class="stats">
+    <div class="stat red"><div class="n" id="stOpen">0</div><div class="l">DOs Open</div></div>
+    <div class="stat amber"><div class="n" id="stPartial">0</div><div class="l">Partial</div></div>
+    <div class="stat green"><div class="n" id="stPlaced">0</div><div class="l">Placed</div></div>
+    <div class="stat"><div class="n" id="stStrikes">0</div><div class="l">Live Strikes</div></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="chip on" data-f="all">ALL</button>
+  <button class="chip" data-f="open">AWAITING STRIKES</button>
+  <button class="chip" data-f="ready">READY TO DECIDE</button>
+  <button class="chip" data-f="partial">PARTIAL</button>
+  <button class="chip" data-f="placed">PLACED</button>
+  <input type="text" id="search" placeholder="Search DO / client / destination / broker…">
+  <div class="spacer"></div>
+  <button class="btn ghost" onclick="load()">↻ REFRESH</button>
+  <button class="btn red" onclick="open_('ovDO')">＋ NEW DO</button>
+</div>
+
+<main>
+  <div class="board" id="board"></div>
+  <div class="empty-board" id="emptyMsg" style="display:none">No DOs on the board. Press <b>＋ NEW DO</b> to open the day.</div>
+</main>
+
+<!-- NEW DO -->
+<div class="overlay" id="ovDO"><div class="modal">
+  <div class="modal-head"><span>NEW DELIVERY ORDER</span><span class="x" onclick="close_('ovDO')">✕</span></div>
+  <div class="modal-body"><div class="fgrid">
+    <div class="fld"><label>DO Number * (exactly as in ERP)</label><input id="dDo"></div>
+    <div class="fld"><label>Client</label><input id="dClient"></div>
+    <div class="fld"><label>From (Port/Yard)</label><input id="dFrom" list="fromList" placeholder="JNPT / Hazira / CFS name"><datalist id="fromList"><option>JNPT</option><option>Uran</option><option>Hazira</option><option>Mundra</option></datalist></div>
+    <div class="fld"><label>Destination *</label><input id="dDest" list="destList" placeholder="Dahej / Ankleshwar / GIDC…"><datalist id="destList"><option>Dahej</option><option>Ankleshwar</option><option>Surat</option><option>Baroda</option><option>Sachin GIDC</option><option>Vapi</option><option>Jhagadia GIDC</option><option>Panoli GIDC</option><option>Halol</option></datalist></div>
+    <div class="fld"><label>Size</label><select id="dSize"><option>20ft</option><option>40ft</option><option>N/A</option></select></div>
+    <div class="fld"><label>Type</label><select id="dType"><option>Container</option><option>ISO Tank</option><option>Open Top</option><option>High Cube</option><option>Reefer</option><option>Loose Cargo</option></select></div>
+    <div class="fld"><label>Trucks Required (lot) *</label><input id="dQty" type="number" min="1" value="1"></div>
+    <div class="fld"><label>Weight per Container (MT)</label><input id="dWt" type="number" step="0.1"></div>
+    <div class="fld"><label>Empty Return Date (free days end)</label><input id="dEmpty" type="date"></div>
+    <div class="fld"><label>Truck Needed By *</label><input id="dNeed" type="datetime-local"></div>
+    <div class="fld"><label class="headonly">Client Freight per Truck (₹)</label><input id="dFreight" type="number"></div>
+    <div class="fld full"><label>Notes</label><input id="dNote" placeholder="urgent import, weighment slip needed…"></div>
+  </div></div>
+  <div class="modal-foot"><button class="btn ghost" onclick="close_('ovDO')">CANCEL</button><button class="btn" onclick="addDO()">OPEN DO</button></div>
+</div></div>
+
+<!-- NEW STRIKE -->
+<div class="overlay" id="ovStrike"><div class="modal">
+  <div class="modal-head"><span id="strikeTitle">LOG STRIKE</span><span class="x" onclick="close_('ovStrike')">✕</span></div>
+  <div class="modal-body"><div class="fgrid">
+    <div class="fld"><label>Sourced By (Executive) *</label><input id="sExec" list="execList"><datalist id="execList"></datalist></div>
+    <div class="fld"><label>Broker / Supplier *</label><input id="sBroker" list="brokerList"><datalist id="brokerList"></datalist></div>
+    <div class="fld"><label>Broker Contact</label><input id="sContact"></div>
+    <div class="fld"><label>Trucks Offered</label><input id="sQty" type="number" min="1" value="1"></div>
+    <div class="fld"><label>Quoted Rate (₹) *</label><input id="sQuoted" type="number"></div>
+    <div class="fld"><label>Negotiated Rate (₹)</label><input id="sNegot" type="number"></div>
+    <div class="fld"><label>Add'l Fees (₹)</label><input id="sFees" type="number" value="0"></div>
+    <div class="fld"><label>Payment Terms</label><select id="sTerms"><option>90% at LR</option><option>100% advance</option><option>Full on POD</option><option>15 days credit</option><option>30 days credit</option></select></div>
+    <div class="fld"><label>Truck Reports At</label><input id="sReport" type="datetime-local"></div>
+    <div class="fld"><label>Rate Valid Until</label><input id="sValid" type="datetime-local"></div>
+    <div class="fld full"><label>Circumstances (market condition, why this rate)</label><textarea id="sCirc"></textarea></div>
+  </div><div class="hint">Strike time is stamped by the server the moment you log it.</div></div>
+  <div class="modal-foot"><button class="btn ghost" onclick="close_('ovStrike')">CANCEL</button><button class="btn" onclick="addStrike()">LOG STRIKE</button></div>
+</div></div>
+
+<!-- AWARD -->
+<div class="overlay" id="ovAward"><div class="modal" style="max-width:420px">
+  <div class="modal-head"><span>AWARD TRUCKS</span><span class="x" onclick="close_('ovAward')">✕</span></div>
+  <div class="modal-body">
+    <div id="awardInfo" style="font-size:12px;margin-bottom:10px;"></div>
+    <div class="fgrid">
+      <div class="fld"><label>Trucks to Award *</label><input id="aQty" type="number" min="1" value="1"></div>
+      <div class="fld full"><label>Reason for selection *</label><textarea id="aReason"></textarea></div>
+    </div>
+  </div>
+  <div class="modal-foot"><button class="btn ghost" onclick="close_('ovAward')">CANCEL</button><button class="btn" onclick="confirmAward()">STAMP AWARD</button></div>
+</div></div>
+
+<script>
+let DOS=[], filter='all', q='', ctx={};
+const rup=n=>n==null||n===''?'—':'₹'+Number(n).toLocaleString('en-IN');
+const fmtDT=d=>{if(!d)return'—';const x=new Date(d);return x.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+' '+x.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});};
+const fmtD=d=>{if(!d)return'—';return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short'});};
+function open_(id){document.getElementById(id).classList.add('open');}
+function close_(id){document.getElementById(id).classList.remove('open');}
+function busy(on){document.getElementById('loading').style.display=on?'block':'none';}
+function esc(t){return (t||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function run(fn,arg){busy(true);
+  google.script.run.withSuccessHandler(j=>{DOS=JSON.parse(j);busy(false);render();})
+  .withFailureHandler(e=>{busy(false);alert(e.message||e);})[fn](arg);}
+function load(){run('apiGetBoard');}
+
+function addDO(){
+  const g=i=>document.getElementById(i).value.trim();
+  const o={doNo:g('dDo'),client:g('dClient'),from:g('dFrom'),dest:g('dDest'),size:g('dSize'),type:g('dType'),
+    qty:g('dQty'),weight:g('dWt'),emptyDate:g('dEmpty'),needBy:g('dNeed'),freight:g('dFreight'),note:g('dNote')};
+  if(!o.doNo||!o.dest||!o.needBy){alert('DO Number, Destination and Needed-By are required.');return;}
+  ['dDo','dClient','dFrom','dDest','dWt','dEmpty','dFreight','dNote'].forEach(i=>document.getElementById(i).value='');
+  close_('ovDO');run('apiAddDO',JSON.stringify(o));
+}
+function openStrike(doNo){ctx={doNo};document.getElementById('strikeTitle').textContent='LOG STRIKE — '+doNo;
+  fillLists();open_('ovStrike');}
+function fillLists(){
+  const b=new Set(),e=new Set();
+  DOS.forEach(d=>d.strikes.forEach(s=>{b.add(s.broker);e.add(s.exec);}));
+  document.getElementById('brokerList').innerHTML=[...b].map(x=>'<option>'+esc(x)+'</option>').join('');
+  document.getElementById('execList').innerHTML=[...e].map(x=>'<option>'+esc(x)+'</option>').join('');
+}
+function addStrike(){
+  const g=i=>document.getElementById(i).value.trim();
+  const o={doNo:ctx.doNo,exec:g('sExec'),broker:g('sBroker'),contact:g('sContact'),qty:g('sQty'),
+    quoted:g('sQuoted'),negot:g('sNegot'),fees:g('sFees'),terms:g('sTerms'),report:g('sReport'),valid:g('sValid'),circ:g('sCirc')};
+  if(!o.exec||!o.broker||!o.quoted){alert('Executive, Broker and Quoted Rate are required.');return;}
+  ['sExec','sBroker','sContact','sQuoted','sNegot','sReport','sValid','sCirc'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('sFees').value='0';document.getElementById('sQty').value='1';
+  close_('ovStrike');run('apiAddStrike',JSON.stringify(o));
+}
+function awardedOf(s){return s.awards.reduce((a,x)=>a+x.qty,0);}
+function placedCount(d){return d.strikes.reduce((a,s)=>a+awardedOf(s),0);}
+function isExpired(s){return s.valid&&new Date(s.valid)<new Date()&&!awardedOf(s);}
+function openAward(doNo,strikeId){
+  const d=DOS.find(x=>x.doNo===doNo);const s=d.strikes.find(x=>x.id===strikeId);
+  ctx={doNo,strikeId};const rem=d.qty-placedCount(d);
+  document.getElementById('aQty').value=Math.min(rem,s.qty);document.getElementById('aQty').max=rem;
+  document.getElementById('awardInfo').innerHTML='<b>'+esc(d.doNo)+'</b> — '+rem+' truck(s) still needed.<br>Strike: <b style="color:var(--blue)">'+esc(s.broker)+'</b> @ <b>'+rup(s.landed)+'</b> landed'+(d.freight!=null?' · margin <b>'+rup(d.freight-s.landed)+'/truck</b>':'');
+  open_('ovAward');
+}
+function confirmAward(){
+  const qty=parseInt(document.getElementById('aQty').value)||0;
+  const reason=document.getElementById('aReason').value.trim();
+  if(!reason){alert('Reason for selection is required — it is the register\'s memory.');return;}
+  document.getElementById('aReason').value='';
+  close_('ovAward');run('apiAward',JSON.stringify({strikeId:ctx.strikeId,qty,reason}));
+}
+function undoAward(awardId,broker){if(confirm('Remove award from '+broker+'?'))run('apiUndoAward',awardId);}
+function cancelDO(doNo){if(confirm('Cancel '+doNo+'? It stays in the register marked CANCELLED.'))run('apiCancelDO',doNo);}
+function status(d){const p=placedCount(d);if(p>=d.qty)return'placed';if(p>0)return'partial';if(d.strikes.length)return'ready';return'open';}
+
+function render(){
+  const board=document.getElementById('board');board.innerHTML='';
+  let shown=0,live=0,open=0,partial=0,placed=0;
+  DOS.forEach(d=>{
+    const st=status(d);
+    if(st==='partial')partial++;else if(st==='placed')placed++;else open++;
+    d.strikes.forEach(s=>{if(!isExpired(s)&&!awardedOf(s))live++;});
+    const hay=(d.doNo+' '+d.client+' '+d.dest+' '+d.from+' '+d.strikes.map(s=>s.broker+' '+s.exec).join(' ')).toLowerCase();
+    if(q&&!hay.includes(q))return;
+    if(filter==='open'&&st!=='open')return;
+    if(filter==='ready'&&st!=='ready')return;
+    if(filter==='partial'&&st!=='partial')return;
+    if(filter==='placed'&&st!=='placed')return;
+    shown++;
+    const overdue=st!=='placed'&&new Date(d.needBy)<new Date();
+    const p=placedCount(d);
+    let pips='';for(let i=0;i<d.qty;i++)pips+='<div class="pip'+(i<p?' f':'')+'"></div>';
+    let sh='';
+    if(!d.strikes.length)sh='<div class="s-empty">No strikes yet — waiting on executives\u2019 network.</div>';
+    else [...d.strikes].sort((a,b)=>new Date(a.at)-new Date(b.at)).forEach(s=>{
+      const exp=isExpired(s);const aw=awardedOf(s);
+      const mg=d.freight!=null?d.freight-s.landed:null;
+      sh+='<div class="strike"><div class="s-top"><div><span class="s-broker">'+esc(s.broker)+'</span> <span class="s-exec">via '+esc(s.exec)+' · '+s.qty+' truck(s)</span></div><div class="s-rate">'+rup(s.landed)+'</div></div>'
+      +'<div class="s-line2"><span class="s-time">struck '+fmtDT(s.at)+(s.report?' · reports '+fmtDT(s.report):'')+'</span>'
+      +(mg!=null?'<span class="s-margin '+(mg>=0?'pos':'neg')+'">'+(mg>=0?'+':'')+rup(mg)+' /truck</span>':'')+'</div>'
+      +(s.circ?'<div class="s-circ">'+esc(s.circ)+'</div>':'')
+      +'<div class="s-tags">';
+      if(aw){s.awards.forEach(a=>{sh+='<span class="tag awarded">AWARDED '+a.qty+' · '+fmtDT(a.at)+'</span>'+(a.reason?'<span style="font-size:10px;color:#555;font-style:italic">'+esc(a.reason)+'</span>':'')+'<button class="award-btn" onclick="undoAward(\''+a.id+'\',\''+esc(s.broker)+'\')">undo</button>';});}
+      else if(exp)sh+='<span class="tag expired">EXPIRED '+fmtDT(s.valid)+'</span>';
+      else{sh+='<span class="tag live">LIVE'+(s.valid?' till '+fmtDT(s.valid):'')+'</span>';
+        if(p<d.qty)sh+='<button class="award-btn" onclick="openAward(\''+esc(d.doNo)+'\',\''+s.id+'\')">award →</button>';}
+      sh+='</div></div>';
+    });
+    let stamp='';
+    if(st==='placed')stamp='<div class="stamp-row"><div class="stamp">FULLY PLACED</div><div class="stamp-note">'+p+'/'+d.qty+' trucks placed</div></div>';
+    else if(st==='partial')stamp='<div class="stamp-row"><div class="stamp partial">PARTIAL '+p+'/'+d.qty+'</div><div class="stamp-note">'+(d.qty-p)+' truck(s) still to place</div></div>';
+    const card=document.createElement('div');
+    card.className='card'+(st==='placed'?' placed':overdue?' overdue':'');
+    card.innerHTML='<div class="card-head"><div><div class="do-no">'+esc(d.doNo)+'</div><div class="client">'+esc(d.client||'')+'</div></div>'
+    +'<div class="needby">needed by<b>'+fmtDT(d.needBy)+'</b>'+(overdue?'<b style="color:#ffd54f">OVERDUE</b>':'')+'</div></div>'
+    +'<div class="lane"><div class="route">'+esc(d.from||'—')+' → '+esc(d.dest)+'</div><div class="meta">'+esc(d.size)+' '+esc(d.type)+(d.weight?' · '+d.weight+' MT':'')+(d.emptyDate?'<br>empty by '+fmtD(d.emptyDate):'')+'</div></div>'
+    +'<div class="placebar">Trucks <span class="pips">'+pips+'</span> <span>'+p+'/'+d.qty+'</span>'
+    +(d.freight!=null?'<span style="margin-left:auto;color:var(--red);font-weight:bold">freight '+rup(d.freight)+'/truck</span>':'<span style="margin-left:auto;color:#999">freight not set</span>')+'</div>'
+    +(d.note?'<div style="padding:4px 10px;font-size:10.5px;color:#555;border-bottom:1px solid var(--line);font-style:italic">'+esc(d.note)+'</div>':'')
+    +'<div class="strikes">'+sh+'</div>'+stamp
+    +'<div class="card-actions"><button onclick="openStrike(\''+esc(d.doNo)+'\')">＋ Log strike</button><button onclick="cancelDO(\''+esc(d.doNo)+'\')">Cancel DO</button></div>';
+    board.appendChild(card);
+  });
+  document.getElementById('emptyMsg').style.display=shown?'none':'block';
+  document.getElementById('stOpen').textContent=open;
+  document.getElementById('stPartial').textContent=partial;
+  document.getElementById('stPlaced').textContent=placed;
+  document.getElementById('stStrikes').textContent=live;
+}
+document.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));ch.classList.add('on');filter=ch.dataset.f;render();});
+document.getElementById('search').oninput=e=>{q=e.target.value.toLowerCase();render();};
+load();
+</script>
+</body>
+</html>

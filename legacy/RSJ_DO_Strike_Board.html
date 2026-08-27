@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSJ Carriers — DO Strike Board</title>
+<style>
+  :root{
+    --ink:#1a1a1a; --paper:#fdfcf9; --line:#c9c4b8;
+    --blue:#1565C0; --red:#B71C1C; --amber:#b7770d; --green:#1b5e20;
+    --grey:#616161;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#e8e5de;font-family:Arial,Helvetica,sans-serif;color:var(--ink);font-size:13px;}
+  .mono{font-family:"Courier New",monospace;}
+
+  /* ---------- top bar ---------- */
+  header{background:var(--ink);color:#fff;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:50;}
+  header .co{font-size:9px;color:#aaa;letter-spacing:2px;text-transform:uppercase;}
+  header .ttl{font-size:17px;font-weight:bold;}
+  .stats{display:flex;gap:18px;text-align:center;}
+  .stat .n{font-size:18px;font-weight:bold;font-family:"Courier New",monospace;}
+  .stat .l{font-size:8px;color:#aaa;letter-spacing:1px;text-transform:uppercase;}
+  .stat.red .n{color:#ff8a80;} .stat.amber .n{color:#ffd54f;} .stat.green .n{color:#a5d6a7;}
+
+  /* ---------- toolbar ---------- */
+  .toolbar{background:#f0eee8;border-bottom:1.5px solid var(--ink);padding:8px 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .chip{border:1.5px solid var(--ink);background:#fff;padding:4px 12px;font-size:11px;font-weight:bold;cursor:pointer;letter-spacing:.5px;}
+  .chip.on{background:var(--ink);color:#fff;}
+  .toolbar input[type=text]{border:1.5px solid var(--ink);padding:5px 8px;font-size:12px;width:200px;background:#fff;}
+  .spacer{flex:1;}
+  .btn{border:1.5px solid var(--ink);background:var(--ink);color:#fff;padding:6px 14px;font-size:12px;font-weight:bold;cursor:pointer;letter-spacing:.5px;}
+  .btn.ghost{background:#fff;color:var(--ink);}
+  .btn.red{background:var(--red);border-color:var(--red);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  main{max-width:1240px;margin:16px auto;padding:0 14px 60px;}
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;align-items:start;}
+
+  /* ---------- DO card ---------- */
+  .card{background:var(--paper);border:2px solid var(--ink);box-shadow:4px 4px 0 #b3afa4;}
+  .card.placed{border-color:var(--green);}
+  .card.overdue{border-color:var(--red);}
+  .card-head{background:var(--ink);color:#fff;padding:7px 10px;display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+  .card.placed .card-head{background:var(--green);}
+  .card.overdue .card-head{background:var(--red);}
+  .do-no{font-family:"Courier New",monospace;font-size:15px;font-weight:bold;}
+  .client{font-size:9px;color:#ddd;letter-spacing:.5px;text-transform:uppercase;margin-top:1px;}
+  .needby{text-align:right;font-size:9px;color:#ddd;text-transform:uppercase;letter-spacing:.5px;}
+  .needby b{display:block;font-size:12px;color:#fff;font-family:"Courier New",monospace;letter-spacing:0;text-transform:none;}
+  .lane{padding:7px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;font-size:11.5px;}
+  .lane .route{font-weight:bold;}
+  .lane .meta{color:#555;white-space:nowrap;}
+  .placebar{padding:5px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#555;}
+  .pips{display:flex;gap:3px;}
+  .pip{width:14px;height:14px;border:1.5px solid var(--ink);background:#fff;}
+  .pip.f{background:var(--green);border-color:var(--green);}
+
+  /* ---------- strikes ---------- */
+  .strikes{padding:4px 0;}
+  .s-empty{padding:10px;font-size:11px;color:#888;font-style:italic;}
+  .strike{border-bottom:1px dashed var(--line);padding:6px 10px;position:relative;}
+  .strike:last-child{border-bottom:none;}
+  .s-top{display:flex;justify-content:space-between;gap:6px;align-items:baseline;}
+  .s-broker{font-weight:bold;font-size:12.5px;color:var(--blue);}
+  .s-exec{font-size:10px;color:#666;}
+  .s-rate{font-family:"Courier New",monospace;font-weight:bold;font-size:14px;white-space:nowrap;}
+  .s-line2{display:flex;justify-content:space-between;gap:6px;margin-top:2px;font-size:10.5px;color:#555;flex-wrap:wrap;}
+  .s-time{font-family:"Courier New",monospace;}
+  .s-margin{font-family:"Courier New",monospace;font-weight:bold;}
+  .s-margin.pos{color:var(--green);} .s-margin.neg{color:var(--red);}
+  .s-circ{margin-top:3px;font-size:10.5px;color:#444;background:#f4f2ec;border-left:3px solid var(--line);padding:3px 6px;font-style:italic;}
+  .s-tags{display:flex;gap:5px;margin-top:4px;align-items:center;flex-wrap:wrap;}
+  .tag{font-size:8.5px;font-weight:bold;letter-spacing:.5px;padding:1px 6px;border:1px solid;text-transform:uppercase;}
+  .tag.live{color:var(--green);border-color:var(--green);}
+  .tag.expired{color:var(--red);border-color:var(--red);}
+  .tag.awarded{color:#fff;background:var(--green);border-color:var(--green);}
+  .award-btn{margin-left:auto;font-size:9.5px;padding:2px 8px;border:1.5px solid var(--ink);background:#fff;font-weight:bold;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;}
+  .award-btn:hover{background:var(--ink);color:#fff;}
+
+  /* ---------- stamp ---------- */
+  .stamp-row{padding:8px 10px;border-top:1.5px solid var(--ink);display:flex;align-items:center;gap:10px;background:#f7f5ef;}
+  .stamp{border:2.5px solid var(--green);color:var(--green);font-weight:bold;font-size:12px;letter-spacing:2px;padding:3px 10px;transform:rotate(-4deg);text-transform:uppercase;font-family:"Courier New",monospace;}
+  .stamp.partial{border-color:var(--amber);color:var(--amber);}
+  .stamp-note{font-size:10px;color:#555;}
+
+  .card-actions{display:flex;border-top:1.5px solid var(--ink);}
+  .card-actions button{flex:1;border:none;background:#fff;padding:8px;font-size:11px;font-weight:bold;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;border-right:1px solid var(--line);}
+  .card-actions button:last-child{border-right:none;}
+  .card-actions button:hover{background:var(--ink);color:#fff;}
+
+  /* ---------- forms / modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(20,20,20,.55);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:30px 10px;overflow:auto;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--paper);border:2px solid var(--ink);box-shadow:6px 6px 0 rgba(0,0,0,.35);width:100%;max-width:560px;}
+  .modal-head{background:var(--ink);color:#fff;padding:9px 14px;font-weight:bold;font-size:14px;display:flex;justify-content:space-between;}
+  .modal-head .x{cursor:pointer;color:#aaa;font-size:16px;line-height:1;}
+  .modal-body{padding:14px;}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}
+  .fgrid .full{grid-column:1/-1;}
+  .fld label{display:block;font-size:8.5px;text-transform:uppercase;letter-spacing:.6px;color:#777;margin-bottom:3px;font-weight:bold;}
+  .fld input,.fld select,.fld textarea{width:100%;border:none;border-bottom:1.5px solid var(--ink);background:transparent;padding:4px 2px;font-size:13px;font-family:inherit;}
+  .fld textarea{border:1px solid var(--ink);min-height:44px;padding:5px;}
+  .fld input:focus,.fld select:focus,.fld textarea:focus{outline:2px solid var(--blue);outline-offset:1px;}
+  .modal-foot{padding:10px 14px;border-top:1.5px solid var(--ink);display:flex;justify-content:flex-end;gap:8px;background:#f0eee8;}
+  .hint{font-size:10px;color:#888;margin-top:6px;}
+  .headonly{color:var(--red);font-weight:bold;}
+  .empty-board{text-align:center;padding:60px 20px;color:#777;font-size:14px;}
+  .warn{background:#fff3cd;border:1.5px solid var(--amber);padding:8px 12px;font-size:11px;margin:0 0 12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="co">RSJ Carriers Pvt. Ltd. — Traffic Head Console</div>
+    <div class="ttl">DO STRIKE BOARD <span style="font-size:10px;color:#aaa;font-weight:normal">truck placement &amp; rate strikes register</span></div>
+  </div>
+  <div class="stats">
+    <div class="stat red"><div class="n" id="stOpen">0</div><div class="l">DOs Open</div></div>
+    <div class="stat amber"><div class="n" id="stPartial">0</div><div class="l">Partial</div></div>
+    <div class="stat green"><div class="n" id="stPlaced">0</div><div class="l">Placed</div></div>
+    <div class="stat"><div class="n" id="stStrikes">0</div><div class="l">Live Strikes</div></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="chip on" data-f="all">ALL</button>
+  <button class="chip" data-f="open">AWAITING STRIKES</button>
+  <button class="chip" data-f="ready">READY TO DECIDE</button>
+  <button class="chip" data-f="partial">PARTIAL</button>
+  <button class="chip" data-f="placed">PLACED</button>
+  <input type="text" id="search" placeholder="Search DO / client / route / broker…">
+  <div class="spacer"></div>
+  <button class="btn ghost" id="btnExport">EXPORT CSV</button>
+  <button class="btn ghost" id="btnSave">SAVE FILE</button>
+  <button class="btn ghost" id="btnLoad">LOAD FILE</button>
+  <input type="file" id="fileIn" accept=".json" style="display:none">
+  <button class="btn red" id="btnNewDO">＋ NEW DO</button>
+</div>
+
+<main>
+  <div class="warn" id="memWarn">Working copy lives in this browser tab only. Use <b>SAVE FILE</b> before closing (end of day), and <b>LOAD FILE</b> to resume. <b>EXPORT CSV</b> feeds your Excel/Sheets register.</div>
+  <div class="board" id="board"></div>
+  <div class="empty-board" id="emptyMsg" style="display:none">No DOs on the board. Press <b>＋ NEW DO</b> to open the day.</div>
+</main>
+
+<!-- NEW DO modal -->
+<div class="overlay" id="ovDO">
+  <div class="modal">
+    <div class="modal-head"><span>NEW DELIVERY ORDER</span><span class="x" onclick="close_('ovDO')">✕</span></div>
+    <div class="modal-body">
+      <div class="fgrid">
+        <div class="fld"><label>DO Number *</label><input id="dDo" placeholder="RSJ-DO-2607"></div>
+        <div class="fld"><label>Client *</label><input id="dClient" placeholder="Client name"></div>
+        <div class="fld full"><label>Route (From → To → Back) *</label><input id="dRoute" placeholder="JNPT → Sachin, Surat → JNPT"></div>
+        <div class="fld"><label>Container / Cargo Type</label>
+          <select id="dType"><option>Container</option><option>ISO Tank</option><option>Open Top</option><option>High Cube</option><option>Reefer</option><option>Loose Cargo</option></select></div>
+        <div class="fld"><label>Size</label><select id="dSize"><option>20ft</option><option>40ft</option><option>N/A</option></select></div>
+        <div class="fld"><label>Trucks Required (lot) *</label><input id="dQty" type="number" min="1" value="1"></div>
+        <div class="fld"><label>Tonnage / Wt per container (MT)</label><input id="dTon" type="number" step="0.1"></div>
+        <div class="fld"><label>Truck Needed By *</label><input id="dNeed" type="datetime-local"></div>
+        <div class="fld"><label class="headonly">Client Freight per Truck (₹) — HEAD ONLY</label><input id="dFreight" type="number"></div>
+        <div class="fld full"><label>Notes / circumstances of the order</label><input id="dNote" placeholder="e.g. urgent import, factory shuts 6pm, weighment slip needed"></div>
+      </div>
+      <div class="hint">Margin on every strike is computed against the freight per truck you enter here.</div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" onclick="close_('ovDO')">CANCEL</button><button class="btn" onclick="addDO()">OPEN DO</button></div>
+  </div>
+</div>
+
+<!-- NEW STRIKE modal -->
+<div class="overlay" id="ovStrike">
+  <div class="modal">
+    <div class="modal-head"><span id="strikeTitle">LOG STRIKE</span><span class="x" onclick="close_('ovStrike')">✕</span></div>
+    <div class="modal-body">
+      <div class="fgrid">
+        <div class="fld"><label>Sourced By (Executive) *</label><input id="sExec"></div>
+        <div class="fld"><label>Broker / Supplier *</label><input id="sBroker"></div>
+        <div class="fld"><label>Broker Contact</label><input id="sContact"></div>
+        <div class="fld"><label>Trucks Offered</label><input id="sQty" type="number" min="1" value="1"></div>
+        <div class="fld"><label>Quoted Rate (₹) *</label><input id="sQuoted" type="number"></div>
+        <div class="fld"><label>Negotiated Rate (₹)</label><input id="sNegot" type="number"></div>
+        <div class="fld"><label>Add'l Fees (₹)</label><input id="sFees" type="number" value="0"></div>
+        <div class="fld"><label>Payment Terms</label>
+          <select id="sTerms"><option>90% at LR</option><option>100% advance</option><option>Full on POD</option><option>15 days credit</option><option>30 days credit</option></select></div>
+        <div class="fld"><label>Truck Reports At</label><input id="sReport" type="datetime-local"></div>
+        <div class="fld"><label>Rate Valid Until</label><input id="sValid" type="datetime-local"></div>
+        <div class="fld full"><label>Circumstances (market condition, why this rate)</label><textarea id="sCirc" placeholder="e.g. teji after rains — trucks short at Uran; broker holding rate only till 6pm"></textarea></div>
+      </div>
+      <div class="hint">Strike time is stamped automatically when you log it.</div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" onclick="close_('ovStrike')">CANCEL</button><button class="btn" onclick="addStrike()">LOG STRIKE</button></div>
+  </div>
+</div>
+
+<!-- AWARD modal -->
+<div class="overlay" id="ovAward">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head"><span>AWARD TRUCKS</span><span class="x" onclick="close_('ovAward')">✕</span></div>
+    <div class="modal-body">
+      <div id="awardInfo" style="font-size:12px;margin-bottom:10px;"></div>
+      <div class="fgrid">
+        <div class="fld"><label>Trucks to Award *</label><input id="aQty" type="number" min="1" value="1"></div>
+        <div class="fld full"><label>Reason for selection *</label><textarea id="aReason" placeholder="e.g. reports tonight, protects client SLA — ₹300 over cheapest"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" onclick="close_('ovAward')">CANCEL</button><button class="btn" onclick="confirmAward()">STAMP AWARD</button></div>
+  </div>
+</div>
+
+<script>
+let DB={dos:[]};
+let filter='all', q='';
+let ctx={doId:null,strikeId:null};
+const rup=n=>n==null||n===''?'—':'₹'+Number(n).toLocaleString('en-IN');
+const uid=()=>Math.random().toString(36).slice(2,9);
+const now=()=>new Date();
+const fmtDT=d=>{if(!d)return'—';const x=new Date(d);return x.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+' '+x.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});};
+
+function open_(id){document.getElementById(id).classList.add('open');}
+function close_(id){document.getElementById(id).classList.remove('open');}
+
+function addDO(){
+  const g=i=>document.getElementById(i).value.trim();
+  if(!g('dDo')||!g('dRoute')||!g('dNeed')){alert('DO Number, Route and Needed-By are required.');return;}
+  DB.dos.unshift({id:uid(),doNo:g('dDo'),client:g('dClient'),route:g('dRoute'),type:g('dType'),size:g('dSize'),
+    qty:Math.max(1,parseInt(g('dQty'))||1),ton:g('dTon'),needBy:g('dNeed'),freight:parseFloat(g('dFreight'))||null,
+    note:g('dNote'),openedAt:now().toISOString(),strikes:[]});
+  ['dDo','dClient','dRoute','dTon','dFreight','dNote'].forEach(i=>document.getElementById(i).value='');
+  close_('ovDO');render();
+}
+
+function openStrike(doId){
+  ctx.doId=doId;const d=DB.dos.find(x=>x.id===doId);
+  document.getElementById('strikeTitle').textContent='LOG STRIKE — '+d.doNo;
+  open_('ovStrike');
+}
+function addStrike(){
+  const g=i=>document.getElementById(i).value.trim();
+  if(!g('sExec')||!g('sBroker')||!g('sQuoted')){alert('Executive, Broker and Quoted Rate are required.');return;}
+  const d=DB.dos.find(x=>x.id===ctx.doId);if(!d)return;
+  d.strikes.push({id:uid(),at:now().toISOString(),exec:g('sExec'),broker:g('sBroker'),contact:g('sContact'),
+    qty:Math.max(1,parseInt(g('sQty'))||1),quoted:parseFloat(g('sQuoted')),negot:parseFloat(g('sNegot'))||parseFloat(g('sQuoted')),
+    fees:parseFloat(g('sFees'))||0,terms:g('sTerms'),report:g('sReport'),valid:g('sValid'),circ:g('sCirc'),awarded:0,awardedAt:null,reason:''});
+  ['sExec','sBroker','sContact','sQuoted','sNegot','sReport','sValid','sCirc'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('sFees').value='0';document.getElementById('sQty').value='1';
+  close_('ovStrike');render();
+}
+
+function placedCount(d){return d.strikes.reduce((a,s)=>a+(s.awarded||0),0);}
+function landed(s){return (s.negot||s.quoted)+(s.fees||0);}
+function isExpired(s){return s.valid&&new Date(s.valid)<now()&&!s.awarded;}
+
+function openAward(doId,strikeId){
+  const d=DB.dos.find(x=>x.id===doId);const s=d.strikes.find(x=>x.id===strikeId);
+  ctx={doId,strikeId};
+  const rem=d.qty-placedCount(d);
+  document.getElementById('aQty').value=Math.min(rem,s.qty);
+  document.getElementById('aQty').max=rem;
+  document.getElementById('awardInfo').innerHTML=
+    '<b>'+d.doNo+'</b> — '+rem+' truck(s) still needed.<br>Strike: <b style="color:var(--blue)">'+s.broker+'</b> @ <b>'+rup(landed(s))+'</b> landed'+
+    (d.freight?(' · margin <b>'+rup(d.freight-landed(s))+'/truck</b>'):'');
+  open_('ovAward');
+}
+function confirmAward(){
+  const d=DB.dos.find(x=>x.id===ctx.doId);const s=d.strikes.find(x=>x.id===ctx.strikeId);
+  const n=parseInt(document.getElementById('aQty').value)||0;
+  const reason=document.getElementById('aReason').value.trim();
+  const rem=d.qty-placedCount(d);
+  if(n<1||n>rem){alert('Award between 1 and '+rem+' trucks.');return;}
+  if(!reason){alert('Reason for selection is required — it is the register\\'s memory.');return;}
+  s.awarded=(s.awarded||0)+n;s.awardedAt=now().toISOString();s.reason=reason;
+  document.getElementById('aReason').value='';
+  close_('ovAward');render();
+}
+function undoAward(doId,strikeId){
+  const d=DB.dos.find(x=>x.id===doId);const s=d.strikes.find(x=>x.id===strikeId);
+  if(confirm('Remove award of '+s.awarded+' truck(s) from '+s.broker+'?')){s.awarded=0;s.awardedAt=null;s.reason='';render();}
+}
+function removeDO(doId){
+  const d=DB.dos.find(x=>x.id===doId);
+  if(confirm('Remove '+d.doNo+' from the board? (Export CSV first if you need the record.)')){DB.dos=DB.dos.filter(x=>x.id!==doId);render();}
+}
+
+function status(d){
+  const p=placedCount(d);
+  if(p>=d.qty)return'placed';
+  if(p>0)return'partial';
+  if(d.strikes.length>0)return'ready';
+  return'open';
+}
+
+function render(){
+  const board=document.getElementById('board');board.innerHTML='';
+  let shown=0,liveStrikes=0,open=0,partial=0,placed=0;
+  DB.dos.forEach(d=>{
+    const st=status(d);
+    if(st==='open')open++;else if(st==='partial')partial++;else if(st==='placed')placed++;else open++;
+    d.strikes.forEach(s=>{if(!isExpired(s)&&!s.awarded)liveStrikes++;});
+    const hay=(d.doNo+' '+d.client+' '+d.route+' '+d.strikes.map(s=>s.broker+' '+s.exec).join(' ')).toLowerCase();
+    if(q&&!hay.includes(q))return;
+    if(filter==='open'&&st!=='open')return;
+    if(filter==='ready'&&st!=='ready')return;
+    if(filter==='partial'&&st!=='partial')return;
+    if(filter==='placed'&&st!=='placed')return;
+    shown++;
+    const overdue=st!=='placed'&&new Date(d.needBy)<now();
+    const card=document.createElement('div');
+    card.className='card'+(st==='placed'?' placed':overdue?' overdue':'');
+    const p=placedCount(d);
+    let pips='';for(let i=0;i<d.qty;i++)pips+='<div class="pip'+(i<p?' f':'')+'"></div>';
+    let strikesHtml='';
+    if(!d.strikes.length){strikesHtml='<div class="s-empty">No strikes yet — waiting on executives\\u2019 network.</div>';}
+    else{
+      const sorted=[...d.strikes].sort((a,b)=>new Date(a.at)-new Date(b.at));
+      sorted.forEach(s=>{
+        const ld=landed(s);const exp=isExpired(s);
+        const mg=d.freight!=null?d.freight-ld:null;
+        strikesHtml+='<div class="strike">'
+        +'<div class="s-top"><div><span class="s-broker">'+esc(s.broker)+'</span> <span class="s-exec">via '+esc(s.exec)+' · '+s.qty+' truck(s)</span></div>'
+        +'<div class="s-rate">'+rup(ld)+'</div></div>'
+        +'<div class="s-line2"><span class="s-time">struck '+fmtDT(s.at)+(s.report?' · reports '+fmtDT(s.report):'')+'</span>'
+        +(mg!=null?'<span class="s-margin '+(mg>=0?'pos':'neg')+'">'+(mg>=0?'+':'')+rup(mg).replace('₹','₹')+' /truck</span>':'')
+        +'</div>'
+        +(s.circ?'<div class="s-circ">'+esc(s.circ)+'</div>':'')
+        +'<div class="s-tags">'
+        +(s.awarded?('<span class="tag awarded">AWARDED '+s.awarded+' · '+fmtDT(s.awardedAt)+'</span>'+(s.reason?'<span style="font-size:10px;color:#555;font-style:italic">'+esc(s.reason)+'</span>':'')+'<button class="award-btn" onclick="undoAward(\\''+d.id+'\\',\\''+s.id+'\\')">undo</button>')
+          :(exp?'<span class="tag expired">EXPIRED '+(s.valid?fmtDT(s.valid):'')+'</span>'
+               :'<span class="tag live">LIVE'+(s.valid?' till '+fmtDT(s.valid):'')+'</span>'
+                +(p<d.qty?'<button class="award-btn" onclick="openAward(\\''+d.id+'\\',\\''+s.id+'\\')">award →</button>':'')))
+        +'</div></div>';
+      });
+    }
+    let stampHtml='';
+    if(st==='placed')stampHtml='<div class="stamp-row"><div class="stamp">FULLY PLACED</div><div class="stamp-note">'+p+'/'+d.qty+' trucks placed</div></div>';
+    else if(st==='partial')stampHtml='<div class="stamp-row"><div class="stamp partial">PARTIAL '+p+'/'+d.qty+'</div><div class="stamp-note">'+(d.qty-p)+' truck(s) still to place</div></div>';
+    card.innerHTML=
+      '<div class="card-head"><div><div class="do-no">'+esc(d.doNo)+'</div><div class="client">'+esc(d.client||'')+'</div></div>'
+      +'<div class="needby">needed by<b>'+fmtDT(d.needBy)+'</b>'+(overdue?'<b style="color:#ffd54f">OVERDUE</b>':'')+'</div></div>'
+      +'<div class="lane"><div class="route">'+esc(d.route)+'</div><div class="meta">'+esc(d.size)+' '+esc(d.type)+(d.ton?' · '+d.ton+' MT':'')+'</div></div>'
+      +'<div class="placebar">Trucks <span class="pips">'+pips+'</span> <span>'+p+'/'+d.qty+'</span>'
+      +(d.freight!=null?'<span style="margin-left:auto;color:var(--red);font-weight:bold">freight '+rup(d.freight)+'/truck</span>':'<span style="margin-left:auto;color:#999">freight not set</span>')+'</div>'
+      +(d.note?'<div style="padding:4px 10px;font-size:10.5px;color:#555;border-bottom:1px solid var(--line);font-style:italic">'+esc(d.note)+'</div>':'')
+      +'<div class="strikes">'+strikesHtml+'</div>'
+      +stampHtml
+      +'<div class="card-actions"><button onclick="openStrike(\\''+d.id+'\\')">＋ Log strike</button><button onclick="removeDO(\\''+d.id+'\\')">Remove</button></div>';
+    board.appendChild(card);
+  });
+  document.getElementById('emptyMsg').style.display=shown?'none':'block';
+  document.getElementById('stOpen').textContent=open;
+  document.getElementById('stPartial').textContent=partial;
+  document.getElementById('stPlaced').textContent=placed;
+  document.getElementById('stStrikes').textContent=liveStrikes;
+}
+function esc(t){return (t||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* filters + search */
+document.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));ch.classList.add('on');filter=ch.dataset.f;render();});
+document.getElementById('search').oninput=e=>{q=e.target.value.toLowerCase();render();};
+document.getElementById('btnNewDO').onclick=()=>open_('ovDO');
+
+/* save / load / export */
+document.getElementById('btnSave').onclick=()=>{
+  const blob=new Blob([JSON.stringify(DB,null,1)],{type:'application/json'});
+  dl(blob,'RSJ_StrikeBoard_'+new Date().toISOString().slice(0,10)+'.json');
+};
+document.getElementById('btnLoad').onclick=()=>document.getElementById('fileIn').click();
+document.getElementById('fileIn').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const j=JSON.parse(r.result);if(j&&Array.isArray(j.dos)){DB=j;render();}else alert('Not a valid strike-board file.');}catch(err){alert('Could not read file: '+err.message);}};
+  r.readAsText(f);e.target.value='';
+};
+document.getElementById('btnExport').onclick=()=>{
+  const rows=[['DO No','Client','Route','Type','Size','Tonnage','Trucks Required','Needed By','Client Freight/Truck','Strike Time','Executive','Broker','Contact','Trucks Offered','Quoted','Negotiated','Fees','Landed','Payment Terms','Reports At','Valid Until','Circumstances','Margin/Truck','Awarded Trucks','Awarded At','Reason']];
+  DB.dos.forEach(d=>{
+    if(!d.strikes.length)rows.push([d.doNo,d.client,d.route,d.type,d.size,d.ton,d.qty,d.needBy,d.freight??'','','(no strikes)','','','','','','','','','','','','','','','']);
+    d.strikes.forEach(s=>{
+      const ld=landed(s);
+      rows.push([d.doNo,d.client,d.route,d.type,d.size,d.ton,d.qty,d.needBy,d.freight??'',s.at,s.exec,s.broker,s.contact,s.qty,s.quoted,s.negot,s.fees,ld,s.terms,s.report,s.valid,s.circ,(d.freight!=null?d.freight-ld:''),s.awarded||0,s.awardedAt||'',s.reason||'']);
+    });
+  });
+  const csv=rows.map(r=>r.map(v=>{v=(v==null?'':String(v));return /[",\\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',')).join('\\n');
+  dl(new Blob(['\\ufeff'+csv],{type:'text/csv'}),'RSJ_RateRegister_'+new Date().toISOString().slice(0,10)+'.csv');
+};
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);}
+
+/* seed example */
+(function seed(){
+  const t=h=>new Date(Date.now()+h*3600e3).toISOString().slice(0,16);
+  DB.dos=[{id:uid(),doNo:'RSJ-DO-2601',client:'Sample Importer Ltd',route:'JNPT → Sachin, Surat → JNPT',type:'Container',size:'40ft',qty:3,ton:25,
+    needBy:t(14),freight:27000,note:'Sample lot of 3 — delete this card and open your real DO',openedAt:new Date().toISOString(),
+    strikes:[
+      {id:uid(),at:new Date(Date.now()-2*3600e3).toISOString(),exec:'Ramesh',broker:'Shree Trans',contact:'98xxxxxx01',qty:2,quoted:24000,negot:23000,fees:0,terms:'90% at LR',report:t(6),valid:t(4),circ:'Teji at Uran after rains — holding rate till evening only',awarded:2,awardedAt:new Date(Date.now()-1*3600e3).toISOString(),reason:'Reports tonight, protects client SLA'},
+      {id:uid(),at:new Date(Date.now()-1.5*3600e3).toISOString(),exec:'Suresh',broker:'Maa Logistics',contact:'98xxxxxx02',qty:3,quoted:22500,negot:22500,fees:0,terms:'90% at LR',report:t(30),valid:t(20),circ:'Cheapest strike but trucks free only tomorrow night',awarded:0,awardedAt:null,reason:''}
+    ]}];
+  render();
+})();
+</script>
+</body>
+</html>
