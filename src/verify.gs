@@ -8,7 +8,59 @@
  * Run verify() any time. It writes nothing.
  */
 
+/**
+ * The one to run. Prints a short report that fits in the execution log.
+ */
 function verify() {
+  var rows = runVerifyChecks_();
+  logReport_('VERIFY', rows);
+  return renderSummary_('VERIFY', rows);
+}
+
+/**
+ * The complete row-by-row table, written into a _VERIFY_REPORT sheet in WB-GOV
+ * because it is far too long for the execution log. Run this when you want to
+ * see or send every single check.
+ */
+function verifyFull() {
+  var rows = runVerifyChecks_();
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty(CONFIG.WORKBOOKS.WB_GOV.propertyKey);
+
+  if (!id) {
+    Logger.log('WB-GOV does not exist yet - run bootstrap() first.');
+    return;
+  }
+
+  var ss = SpreadsheetApp.openById(id);
+  var sheet = ss.getSheetByName('_VERIFY_REPORT');
+  if (!sheet) sheet = ss.insertSheet('_VERIFY_REPORT');
+  sheet.clear();
+
+  var stamp = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'dd-MMM-yyyy HH:mm');
+  var grid = [['VERIFY REPORT - ' + stamp, '', '', ''],
+              [verdictLine_(rows), '', '', ''],
+              ['', '', '', ''],
+              ['WHAT', 'WHERE', 'RESULT', 'DETAIL']]
+              .concat(rows.map(function (r) {
+                return [r[0], r[1], r[2], String(r[3] === undefined ? '' : r[3])];
+              }));
+
+  sheet.getRange(1, 1, grid.length, 4).setValues(grid);
+  sheet.getRange(1, 1).setFontSize(13).setFontWeight('bold');
+  sheet.getRange(2, 1).setFontWeight('bold');
+  sheet.getRange(4, 1, 1, 4).setFontWeight('bold');
+  sheet.setFrozenRows(4);
+  sheet.autoResizeColumns(1, 3);
+  sheet.setColumnWidth(4, 620);
+  sheet.setTabColor('#7a7a7a');
+
+  var url = ss.getUrl() + '#gid=' + sheet.getSheetId();
+  Logger.log(verdictLine_(rows) + '\n\nFull table written to the _VERIFY_REPORT sheet:\n' + url);
+  return url;
+}
+
+function runVerifyChecks_() {
   var report = [];
   var props = PropertiesService.getScriptProperties();
 
@@ -40,8 +92,7 @@ function verify() {
 
   verifySeeds_(props, report);
 
-  logReport_('VERIFY', report);
-  return renderReport_('VERIFY', report);
+  return report;
 }
 
 

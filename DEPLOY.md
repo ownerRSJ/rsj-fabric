@@ -106,9 +106,16 @@ Then run `bootstrap` once more to write the counter.
 
 ## Step 7 — Check the work
 
-Run the function `verify`. Then **View → Logs** (or Ctrl+Enter).
+Run the function `verify`. The **Execution log** panel opens by itself at the
+bottom of the screen — there is no menu to click.
 
-You want a table ending in **ALL PASS**.
+You want the line at the top to read **ALL PASS**.
+
+The log prints a short summary: a count of each kind of check, then every
+failure and warning spelled out in full. If you ever want the complete
+row-by-row table, run `verifyFull` instead — it writes all ~150 rows into a
+`_VERIFY_REPORT` sheet inside WB-GOV and prints the link, because that much text
+does not fit in the log.
 
 - `FAIL` — something is genuinely wrong. Bring the log back here.
 - `WARN` — nothing is broken; a real-world fact is still outstanding (Traffic

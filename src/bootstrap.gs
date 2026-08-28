@@ -335,9 +335,9 @@ function buildReadmeSheet_(ss, wbKey, report) {
  * Reporting
  * ====================================================================== */
 
-function renderReport_(title, rows) {
-  var head = ['WHAT', 'WHERE', 'RESULT', 'DETAIL'];
-  var rule = ['----', '-----', '------', '------'];
+function renderTable_(rows, headings) {
+  var head = headings || ['WHAT', 'WHERE', 'RESULT', 'DETAIL'];
+  var rule = head.map(function (h) { return Array(h.length + 1).join('-'); });
 
   var cell = function (r, i) { return String(r[i] === undefined || r[i] === null ? '' : r[i]); };
 
@@ -362,23 +362,75 @@ function renderReport_(title, rows) {
       .replace(/\s+$/, '');
   };
 
-  var out = [title + ' REPORT', ''];
-  out.push(line(head));
-  out.push(line(rule));
+  var out = [line(head), line(rule)];
   rows.forEach(function (r) { out.push(line(r)); });
+  return out.join('\n');
+}
 
-  var fails = rows.filter(function (r) { return r[2] === 'FAIL'; }).length;
-  var warns = rows.filter(function (r) { return r[2] === 'WARN'; }).length;
-  out.push('');
-  out.push(fails === 0
+function countBy_(rows, result) {
+  return rows.filter(function (r) { return r[2] === result; }).length;
+}
+
+function verdictLine_(rows) {
+  var fails = countBy_(rows, 'FAIL');
+  var warns = countBy_(rows, 'WARN');
+  return fails === 0
     ? 'ALL PASS - ' + rows.length + ' checks, 0 failures' + (warns ? ', ' + warns + ' warnings' : '')
-    : fails + ' FAILURE(S) out of ' + rows.length + ' checks');
+    : fails + ' FAILURE(S) out of ' + rows.length + ' checks';
+}
 
+/** The complete row-by-row table. Too long for the execution log. */
+function renderReport_(title, rows) {
+  return [title + ' REPORT', '', renderTable_(rows), '', verdictLine_(rows)].join('\n');
+}
+
+/**
+ * The short version that actually fits in the execution log.
+ *
+ * Google truncates long log output, and it truncates from the BOTTOM - which is
+ * exactly where the verdict lives. So the log gets a tally per category plus
+ * every FAIL and WARN in full, and the ~180 PASS lines are summarised as counts.
+ * Run verifyFull() when the whole table is genuinely wanted.
+ */
+function renderSummary_(title, rows) {
+  var order = [];
+  var groups = {};
+  rows.forEach(function (r) {
+    var k = String(r[0]);
+    if (!groups[k]) { groups[k] = []; order.push(k); }
+    groups[k].push(r);
+  });
+
+  var tally = order.map(function (k) {
+    var g = groups[k];
+    return [k,
+      String(countBy_(g, 'PASS')),
+      String(countBy_(g, 'FAIL')),
+      String(countBy_(g, 'WARN'))];
+  });
+
+  var out = [title + ' REPORT', '', verdictLine_(rows), ''];
+  out.push(renderTable_(tally, ['CHECK', 'PASS', 'FAIL', 'WARN']));
+
+  var fails = rows.filter(function (r) { return r[2] === 'FAIL'; });
+  var warns = rows.filter(function (r) { return r[2] === 'WARN'; });
+
+  if (fails.length) {
+    out.push('', '=== FAILURES - these need fixing ===', renderTable_(fails));
+  }
+  if (warns.length) {
+    out.push('', '=== WARNINGS - waiting on real-world facts, not on code ===', renderTable_(warns));
+  }
+  if (!fails.length && !warns.length) {
+    out.push('', 'Nothing outstanding. Every check passed.');
+  }
+
+  out.push('', 'Full row-by-row table: run verifyFull().');
   return out.join('\n');
 }
 
 function logReport_(title, rows) {
-  Logger.log(renderReport_(title, rows));
+  Logger.log(renderSummary_(title, rows));
 }
 
 /**
