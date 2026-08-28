@@ -69,29 +69,34 @@ function idCounterSeeds_() {
 
 /**
  * Reads the owner-supplied challan seed. Refuses to guess.
+ *
+ * Returns null when the owner has not supplied it yet - that is a normal state
+ * on the day the skeleton is built, not an error. It becomes an error at
+ * verify() time, which FAILS until the counter holds a real number.
  */
 function readChallanSeed_() {
   var raw = PropertiesService.getScriptProperties()
     .getProperty(CONFIG.CHALLAN_SEED_PROPERTY_KEY);
 
-  if (raw === null || String(raw).trim() === '') {
-    throw new Error(
-      'CHALLAN_SEED is not set.\n\n' +
-      'The challan series continues the live number series already in use ' +
-      '(D6) - it does not start at 1. Before running bootstrap(), the owner ' +
-      'must supply that morning\'s NEXT challan number, and it must be stored ' +
-      'as a script property (never in the repo):\n\n' +
-      '  In the Apps Script editor: Project Settings -> Script Properties ->\n' +
-      '  Add script property, name CHALLAN_SEED, value e.g. 43486\n\n' +
-      'Then run bootstrap() again.'
-    );
-  }
+  if (raw === null || String(raw).trim() === '') return null;
 
   var n = Number(String(raw).trim());
   if (!isFinite(n) || n <= 0 || Math.floor(n) !== n) {
-    throw new Error('CHALLAN_SEED must be a whole positive number. Found: "' + raw + '"');
+    throw new Error(
+      'CHALLAN_SEED must be a whole positive number. Found: "' + raw + '".\n\n' +
+      'It is the NEXT challan number in the series already in live use (D6) - ' +
+      'e.g. 43486. It does not start at 1.'
+    );
   }
   return n;
+}
+
+/** The instruction the owner needs when the seed is still missing. */
+function challanSeedInstruction_() {
+  return 'challan_no NOT seeded - the series continues the live numbering (D6), ' +
+         'so only the owner has this number. Apps Script editor -> Project Settings ' +
+         '-> Script Properties -> add CHALLAN_SEED = that morning\'s next challan ' +
+         'number (e.g. 43486), then run bootstrap() again.';
 }
 
 /**
@@ -120,7 +125,13 @@ function seedGovernanceTables_(ssGov, report) {
   }
 
   var rows = idCounterSeeds_();
-  rows.unshift(['challan_no', readChallanSeed_()]);
+
+  var challanSeed = readChallanSeed_();
+  if (challanSeed !== null) {
+    rows.unshift(['challan_no', challanSeed]);
+  } else if (!existing['challan_no']) {
+    report.push(['SEED', 'ID_COUNTERS.challan_no', 'WARN', challanSeedInstruction_()]);
+  }
 
   var toWrite = rows
     .filter(function (r) { return !existing[r[0]]; })

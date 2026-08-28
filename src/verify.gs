@@ -204,7 +204,7 @@ function verifySeeds_(props, report) {
 
     var challan = cRows.filter(function (r) { return r[0] === 'challan_no'; })[0];
     if (!challan) {
-      report.push(['SEED', 'ID_COUNTERS.challan_no', 'FAIL', 'counter missing']);
+      report.push(['SEED', 'ID_COUNTERS.challan_no', 'FAIL', challanSeedInstruction_()]);
     } else {
       report.push(['SEED', 'ID_COUNTERS.challan_no', Number(challan[1]) > 0 ? 'PASS' : 'FAIL',
         'seeded at ' + challan[1] + ' (must continue the live series, D6)']);

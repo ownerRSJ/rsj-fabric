@@ -18,9 +18,11 @@ function bootstrap() {
   var report = [];
   var props = PropertiesService.getScriptProperties();
 
-  // Fail fast and loudly if the owner has not supplied the challan seed,
-  // BEFORE creating any files.
-  readChallanSeed_();
+  // NOTE: the challan seed is deliberately NOT required here. Building the
+  // filing cabinet and knowing that morning's next challan number are two
+  // different days' work (ROADMAP.md). The counter is seeded only if the owner
+  // has supplied the number; if he has not, seeding reports it loudly and
+  // verify() FAILS until it is set. Nothing invents a starting number.
 
   workbookKeys_().forEach(function (wbKey) {
     var ss = getOrCreateWorkbook_(wbKey, props, report);
