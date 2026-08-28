@@ -1,0 +1,8 @@
+# clasp only pushes what is under rootDir (src/). These rules are belt and
+# braces so nothing outside the source folder can ever reach Apps Script.
+legacy/**
+*.md
+.clasp.json
+.clasp.json.example
+node_modules/**
+.git/**

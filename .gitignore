@@ -1,0 +1,12 @@
+# CLAUDE.md rule 10 - no secrets, no ids in the repo.
+# .clasp.json holds the Apps Script project id. Copy .clasp.json.example to
+# .clasp.json locally and paste the id there; it never gets committed.
+.clasp.json
+.clasprc.json
+
+node_modules/
+npm-debug.log*
+*.log
+
+.DS_Store
+Thumbs.db
