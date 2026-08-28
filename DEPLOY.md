@@ -2,6 +2,11 @@
 
 Plain language, in order. You only do steps 1–4 once, ever.
 
+> **Status:** steps 1–4 are DONE. The Apps Script project "RSJ Fabric" exists and
+> the code is pushed, under **owner@rsjcarriers.com** — so the owner's account
+> will own the four spreadsheets, which is the intended arrangement. Start at
+> step 5.
+
 **The one rule:** code travels in ONE direction — this folder → `clasp push` →
 Apps Script. Never type code into the Apps Script website. If you edit there, the
 next `clasp push` silently wipes it.
@@ -61,16 +66,32 @@ this folder is ever pushed.
 
 ---
 
-## Step 5 — Give the script the owner's challan number
-
-**This is the one number only your father can supply**, and it must be right
-before anything else happens.
-
-The challan series continues the numbering already in live use (D6) — it does
-**not** start at 1. On the morning you run this, ask him for the **next challan
-number** that would have been written by hand.
+## Step 5 — Build the workbooks
 
     ! clasp open-script
+
+In the Apps Script editor, pick `bootstrap` from the function dropdown at the top
+and press **Run**.
+
+The first run asks you to authorize the script — approve it. (Google will warn
+that the app "isn't verified"; that is normal for your own script. Choose
+**Advanced → Go to RSJ Fabric**.) It takes a couple of minutes because it is
+creating four spreadsheets and 33 sheets.
+
+Running it a second time is safe. It never deletes a sheet, never rewrites a
+header row that already has content, and never resets a counter that has moved.
+
+## Step 6 — Give the script the owner's challan number
+
+**This is the one number only your father can supply.**
+
+The challan series continues the numbering already in live use (D6) — it does
+**not** start at 1. Ask him for the **next challan number** that would have been
+written by hand.
+
+You can do this before or after step 5 — the skeleton gets built either way, and
+`bootstrap()` simply reports the counter as missing until you set it. What it
+will never do is invent a starting number.
 
 In the Apps Script editor: **Project Settings** (the gear on the left) →
 **Script Properties** → **Add script property**
@@ -81,19 +102,7 @@ In the Apps Script editor: **Project Settings** (the gear on the left) →
 
 It lives here, not in the code, so the number never lands in the repo.
 
-`bootstrap()` refuses to run without it, on purpose. A challan series that
-silently restarted at 1 would break every join back to eCount.
-
-## Step 6 — Build the workbooks
-
-Still in the Apps Script editor, pick `bootstrap` from the function dropdown at
-the top and press **Run**.
-
-The first run asks you to authorize the script — approve it. It takes a couple of
-minutes because it is creating four spreadsheets and 33 sheets.
-
-Running it a second time is safe. It never deletes a sheet, never rewrites a
-header row that already has content, and never resets a counter that has moved.
+Then run `bootstrap` once more to write the counter.
 
 ## Step 7 — Check the work
 
