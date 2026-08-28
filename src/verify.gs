@@ -96,33 +96,30 @@ function verifyRegisterSheet_(ss, wbKey, table, report) {
       p.canDomainEdit() ? 'domain edit still allowed' : 'owner-only, ' + p.getEditors().length + ' editor(s)']);
   }
 
-  verifyValidations_(sheet, table, where, report);
+  verifyValidations_(sheet, wbKey, table, where, report);
 }
 
 
-function verifyValidations_(sheet, table, where, report) {
+function verifyValidations_(sheet, wbKey, table, where, report) {
   var enumCols = table.columns.filter(function (c) {
     return c.t && c.t.indexOf('LIST:') === 0;
   });
   if (!enumCols.length) return;
 
+  // One read for the whole header-adjacent row rather than one per column.
+  // Reading cell by cell is what made verify() take nine minutes.
+  var rules = sheet.getRange(2, 1, 1, table.columns.length).getDataValidations()[0];
+
   var missing = [];
   var skipped = [];
 
   enumCols.forEach(function (col) {
-    var idx = table.columns.indexOf(col) + 1;
-    var rule = sheet.getRange(2, idx).getDataValidation();
-    var listKey = col.t.substring(5);
-
-    if (rule) return;
+    if (rules[table.columns.indexOf(col)]) return;
 
     // A list that is empty on purpose (CONFIG.TRAFFIC_MANAGERS) is a warning,
     // not a failure - it means a real-world fact is still outstanding.
-    var wbKey = null;
-    workbookKeys_().forEach(function (k) {
-      if (FABRIC_SCHEMA[k].indexOf(table) !== -1) wbKey = k;
-    });
-    var values = wbKey ? (LISTS[wbKey] || {})[listKey] : null;
+    var listKey = col.t.substring(5);
+    var values = (LISTS[wbKey] || {})[listKey];
 
     if (!values || !values.length) skipped.push(col.h + ' (' + listKey + ' empty)');
     else missing.push(col.h);

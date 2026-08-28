@@ -336,21 +336,35 @@ function buildReadmeSheet_(ss, wbKey, report) {
  * ====================================================================== */
 
 function renderReport_(title, rows) {
+  var head = ['WHAT', 'WHERE', 'RESULT', 'DETAIL'];
+  var rule = ['----', '-----', '------', '------'];
+
+  var cell = function (r, i) { return String(r[i] === undefined || r[i] === null ? '' : r[i]); };
+
+  // The heading row and the underline row must be measured too. Measuring only
+  // the data rows is what broke this: every verify() result is PASS/FAIL/WARN,
+  // four characters, under a heading of six - which asked for minus-two
+  // characters of padding and threw "Invalid array length".
   var widths = [0, 0, 0, 0];
-  rows.forEach(function (r) {
-    for (var i = 0; i < 4; i++) widths[i] = Math.max(widths[i], String(r[i] || '').length);
+  [head, rule].concat(rows).forEach(function (r) {
+    for (var i = 0; i < 4; i++) widths[i] = Math.max(widths[i], cell(r, i).length);
   });
 
+  var pad = function (v, w) {
+    while (v.length < w) v += ' ';
+    return v;
+  };
+
   var line = function (r) {
-    return [0, 1, 2, 3].map(function (i) {
-      var v = String(r[i] === undefined ? '' : r[i]);
-      return v + Array(widths[i] - v.length + 1).join(' ');
-    }).join('  ');
+    return [0, 1, 2, 3]
+      .map(function (i) { return pad(cell(r, i), widths[i]); })
+      .join('  ')
+      .replace(/\s+$/, '');
   };
 
   var out = [title + ' REPORT', ''];
-  out.push(line(['WHAT', 'WHERE', 'RESULT', 'DETAIL']));
-  out.push(line(['----', '-----', '------', '------']));
+  out.push(line(head));
+  out.push(line(rule));
   rows.forEach(function (r) { out.push(line(r)); });
 
   var fails = rows.filter(function (r) { return r[2] === 'FAIL'; }).length;
