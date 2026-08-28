@@ -182,8 +182,47 @@ function buildRegisterSheet_(ss, wbKey, table, report) {
   styleHeader_(sheet, headers.length);
   applyColumnFormats_(sheet, table);
   applyValidations_(ss, wbKey, sheet, table, report);
+  repairCheckboxFill_(wbKey, sheet, table, report);
   applyHandsOffNote_(sheet, table);
   protectSheet_(sheet, table);
+}
+
+/**
+ * Clears the FALSE values left behind by an earlier bootstrap that used
+ * insertCheckboxes(). Registers must start genuinely empty, or getLastRow()
+ * lies to everything downstream.
+ *
+ * Deliberately cautious: it only clears rows that carry NOTHING but checkbox
+ * values. If any row holds real content the sheet is left completely alone and
+ * says so, because guessing wrong here would delete somebody's data.
+ */
+function repairCheckboxFill_(wbKey, sheet, table, report) {
+  var checkIdx = [];
+  table.columns.forEach(function (c, i) { if (c.t === 'CHECK') checkIdx.push(i); });
+  if (!checkIdx.length) return;
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+
+  var values = sheet.getRange(2, 1, lastRow - 1, table.columns.length).getValues();
+
+  var hasRealData = values.some(function (row) {
+    return row.some(function (v, c) {
+      return checkIdx.indexOf(c) === -1 && v !== '' && v !== null;
+    });
+  });
+
+  if (hasRealData) {
+    report.push(['REPAIR', wbKey + '.' + table.name, 'WARN',
+      'holds real data - stray checkbox values NOT auto-cleared, check by hand']);
+    return;
+  }
+
+  checkIdx.forEach(function (c) {
+    sheet.getRange(2, c + 1, lastRow - 1, 1).clearContent();
+  });
+  report.push(['REPAIR', wbKey + '.' + table.name, 'PASS',
+    'cleared ' + (lastRow - 1) + ' stray checkbox rows']);
 }
 
 function styleHeader_(sheet, width) {
@@ -222,7 +261,14 @@ function applyValidations_(ss, wbKey, sheet, table, report) {
     var range = sheet.getRange(2, i + 1, lastRow - 1, 1);
 
     if (col.t === 'CHECK') {
-      range.insertCheckboxes();
+      // NOT insertCheckboxes(). That writes FALSE into every cell of the
+      // column, so an empty register ends up holding 999 rows of false data:
+      // getLastRow() becomes 1000, the service layer would append at row 1001,
+      // and the seeder skipped EXPENSE_CATEGORIES because it looked full.
+      // A checkbox VALIDATION gives the same tick-box with no content written.
+      range.setDataValidation(
+        SpreadsheetApp.newDataValidation().requireCheckbox().build()
+      );
       return;
     }
 

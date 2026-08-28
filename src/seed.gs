@@ -103,24 +103,46 @@ function challanSeedInstruction_() {
  * Writes both seeds. Safe to re-run: it will not overwrite a counter that
  * already holds a value, because that value may have advanced in real use.
  */
+/**
+ * The last row holding a real value in `col` - ignoring blank rows that merely
+ * carry formatting or a stray checkbox. Returns 1 (header only) when empty.
+ *
+ * getLastRow() counts anything, including the FALSE that insertCheckboxes()
+ * used to scatter down the sheet. Trusting it is what made the seeder skip
+ * EXPENSE_CATEGORIES and report 999 phantom categories.
+ */
+function lastDataRow_(sheet, col) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 1;
+
+  var values = sheet.getRange(2, col, lastRow - 1, 1).getValues();
+  for (var i = values.length - 1; i >= 0; i--) {
+    if (String(values[i][0]).trim() !== '') return i + 2;
+  }
+  return 1;
+}
+
 function seedGovernanceTables_(ssGov, report) {
   // ---- EXPENSE_CATEGORIES ------------------------------------------------
   var cats = ssGov.getSheetByName('EXPENSE_CATEGORIES');
-  if (cats.getLastRow() < 2) {
+  var catsLast = lastDataRow_(cats, 1);
+
+  if (catsLast < 2) {
     cats.getRange(2, 1, EXPENSE_CATEGORIES_SEED.length, EXPENSE_CATEGORIES_SEED[0].length)
         .setValues(EXPENSE_CATEGORIES_SEED);
     report.push(['SEED', 'EXPENSE_CATEGORIES', 'PASS',
       EXPENSE_CATEGORIES_SEED.length + ' categories written']);
   } else {
     report.push(['SEED', 'EXPENSE_CATEGORIES', 'SKIP',
-      'already has ' + (cats.getLastRow() - 1) + ' rows - left untouched']);
+      'already has ' + (catsLast - 1) + ' categories - left untouched']);
   }
 
   // ---- ID_COUNTERS -------------------------------------------------------
   var counters = ssGov.getSheetByName('ID_COUNTERS');
+  var countersLast = lastDataRow_(counters, 1);
   var existing = {};
-  if (counters.getLastRow() > 1) {
-    counters.getRange(2, 1, counters.getLastRow() - 1, 1).getValues()
+  if (countersLast > 1) {
+    counters.getRange(2, 1, countersLast - 1, 1).getValues()
       .forEach(function (r) { existing[String(r[0]).trim()] = true; });
   }
 
@@ -138,7 +160,7 @@ function seedGovernanceTables_(ssGov, report) {
     .map(function (r) { return [r[0], r[1], new Date()]; });
 
   if (toWrite.length) {
-    counters.getRange(counters.getLastRow() + 1, 1, toWrite.length, 3).setValues(toWrite);
+    counters.getRange(countersLast + 1, 1, toWrite.length, 3).setValues(toWrite);
     report.push(['SEED', 'ID_COUNTERS', 'PASS', toWrite.length + ' counters written']);
   } else {
     report.push(['SEED', 'ID_COUNTERS', 'SKIP', 'all counters already present']);

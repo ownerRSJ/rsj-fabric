@@ -221,8 +221,10 @@ function verifySeeds_(props, report) {
 
   // ---- EXPENSE_CATEGORIES ------------------------------------------------
   var cats = ss.getSheetByName('EXPENSE_CATEGORIES');
-  if (cats && cats.getLastRow() > 1) {
-    var rows = cats.getRange(2, 1, cats.getLastRow() - 1, 6).getValues();
+  var catsLast = cats ? lastDataRow_(cats, 1) : 1;
+  if (catsLast > 1) {
+    var rows = cats.getRange(2, 1, catsLast - 1, 6).getValues()
+      .filter(function (r) { return String(r[0]).trim() !== ''; });
     report.push(['SEED', 'EXPENSE_CATEGORIES', 'PASS', rows.length + ' categories present']);
 
     var border = rows.filter(function (r) { return r[0] === 'BORDER_FACILITATION'; })[0];
@@ -246,8 +248,10 @@ function verifySeeds_(props, report) {
 
   // ---- ID_COUNTERS -------------------------------------------------------
   var counters = ss.getSheetByName('ID_COUNTERS');
-  if (counters && counters.getLastRow() > 1) {
-    var cRows = counters.getRange(2, 1, counters.getLastRow() - 1, 2).getValues();
+  var countersLast = counters ? lastDataRow_(counters, 1) : 1;
+  if (countersLast > 1) {
+    var cRows = counters.getRange(2, 1, countersLast - 1, 2).getValues()
+      .filter(function (r) { return String(r[0]).trim() !== ''; });
     report.push(['SEED', 'ID_COUNTERS', 'PASS', cRows.length + ' counters present']);
 
     var challan = cRows.filter(function (r) { return r[0] === 'challan_no'; })[0];
@@ -268,7 +272,7 @@ function verifySeeds_(props, report) {
   }
 
   var usersSheet = ss.getSheetByName('USERS_ROLES');
-  if (usersSheet && usersSheet.getLastRow() < 2) {
+  if (usersSheet && lastDataRow_(usersSheet, 1) < 2) {
     report.push(['CONFIG', 'USERS_ROLES', 'WARN',
       'empty - the 16-account roster from Amendment A9 is loaded in Phase 2 with the auth layer']);
   }
