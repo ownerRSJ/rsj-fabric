@@ -166,17 +166,39 @@ function buildRegisterSheet_(ss, wbKey, table, report) {
 
   var headers = headersOf_(table);
 
-  // Never overwrite a header row that already has content - if it is wrong,
-  // verify() must say so out loud rather than bootstrap silently "fixing" it
-  // and shifting real columns underneath real data.
+  // Header rows are rewritten ONLY while the sheet is empty of data. Once a
+  // single data row exists, a changed schema must fail loudly in verify()
+  // rather than have bootstrap silently shift real columns under real data.
   var firstCell = sheet.getRange(1, 1).getValue();
   if (firstCell === '' || firstCell === null) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     report.push(['SHEET', wbKey + '.' + table.name, created ? 'CREATED' : 'HEADERS',
       headers.length + ' columns']);
   } else {
-    report.push(['SHEET', wbKey + '.' + table.name, 'REUSE',
-      'header row already populated - left as is, see verify()']);
+    var current = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1))
+                       .getValues()[0].map(function (v) { return String(v).trim(); });
+    while (current.length && current[current.length - 1] === '') current.pop();
+
+    var same = current.length === headers.length &&
+               current.every(function (v, i) { return v === headers[i]; });
+
+    if (same) {
+      report.push(['SHEET', wbKey + '.' + table.name, 'REUSE', 'headers already correct']);
+    } else if (sheet.getLastRow() <= 1) {
+      // Schema changed (an approved amendment) and the sheet holds nothing but
+      // its header - safe to rebuild the header in place. Stale validations
+      // and formats sit on old column positions, so both are cleared and then
+      // reapplied by the steps below.
+      sheet.getRange(1, 1, 1, sheet.getMaxColumns()).clearContent();
+      sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
+           .clearDataValidations().clearFormat();
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      report.push(['SHEET', wbKey + '.' + table.name, 'MIGRATED',
+        'empty sheet, header rebuilt to current schema (' + headers.length + ' columns)']);
+    } else {
+      report.push(['SHEET', wbKey + '.' + table.name, 'WARN',
+        'header differs from schema but sheet holds data - NOT touched; verify() will FAIL']);
+    }
   }
 
   styleHeader_(sheet, headers.length);

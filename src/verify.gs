@@ -236,11 +236,15 @@ function verifySeeds_(props, report) {
         'visibility_tier = ' + border[2] + ' (D9 requires DIRECTOR_ONLY)']);
     }
 
-    var noBucket = rows.filter(function (r) { return !String(r[5]).trim(); })
-                       .map(function (r) { return r[0]; });
+    // OTHER is exempt: it has no honest default, so its bucket is picked at
+    // entry time (A11 ruling). Anything else blank is a real gap.
+    var noBucket = rows.filter(function (r) {
+                     return !String(r[5]).trim() && String(r[0]).trim() !== 'OTHER';
+                   })
+                   .map(function (r) { return r[0]; });
     if (noBucket.length) {
       report.push(['SEED', 'EXPENSE_CATEGORIES.default_bucket', 'WARN',
-        'no D16 bucket assigned to: ' + noBucket.join(', ') + ' - needs an owner ruling']);
+        'no bucket assigned to: ' + noBucket.join(', ') + ' - needs an owner ruling']);
     }
   } else {
     report.push(['SEED', 'EXPENSE_CATEGORIES', 'FAIL', 'not seeded']);

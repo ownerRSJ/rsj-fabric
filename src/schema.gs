@@ -429,15 +429,23 @@ var FABRIC_SCHEMA = {
         { h: 'paid_date',  t: 'DATE' },
         { h: 'paid_amount', t: 'MONEY' },
         { h: 'delay_days',  t: 'INT' },
-        // OPEN QUESTION for Checkpoint #2: SCHEMA.md §5.13 describes deductions
-        // as "structured: SHORTAGE / DETENTION_CHARGEBACK / TDS / DAMAGE /
-        // OTHER, each amount+reason" - i.e. potentially several per payable,
-        // which is really a child table. Kept as one column for the skeleton so
-        // no cardinality is invented before the owner rules on it.
-        { h: 'deductions' },
+        // Deductions moved to the SUPPLIER_PAYABLE_DEDUCTIONS child register
+        // per Amendment A12 (Checkpoint #2) - several per bill is normal.
         { h: 'payment_advice_ref' },
         { h: 'dispute_flag', t: 'CHECK' },
         { h: 'notes' }
+      ] },
+
+    { name: 'SUPPLIER_PAYABLE_DEDUCTIONS', ref: 'SCHEMA.md §5.14 (Amendment A12)', appendOnly: false,
+      note: 'One row per deduction on a supplier bill - a single payment routinely carries TDS plus a detention chargeback plus occasionally damage. The payment advice itemizes from these rows, which is the breakup sheet suppliers demand.',
+      columns: [
+        { h: 'deduction_id' },
+        { h: 'payable_id' },
+        { h: 'deduction_type', t: 'LIST:DEDUCTION_TYPE' },
+        { h: 'amount', t: 'MONEY' },
+        { h: 'reason' },
+        { h: 'entered_by' },
+        { h: 'ts', t: 'TS' }
       ] }
   ],
 

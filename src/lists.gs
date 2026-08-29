@@ -50,8 +50,11 @@ var LISTS = {
     // EXPENSE_CATEGORIES.ecount_template - which import template the money flows to
     EXPENSE_ECOUNT_TEMPLATE: ['DIESEL_ENTRY', 'TOLL_TAX', 'CASH_PAYMENT', 'JV'],
 
-    // EXPENSE_CATEGORIES.default_bucket - the three-bucket taxonomy (D16)
-    EXPENSE_BUCKET: ['A_TRIP_CASH', 'B_CLIENT_RECOVERABLE', 'C_EXTRAORDINARY'],
+    // EXPENSE_CATEGORIES.default_bucket - the expense taxonomy: three driver
+    // buckets (D16) plus bucket D for direct company costs (Amendment A11,
+    // Checkpoint #2): diesel/toll on own trucks move through no driver, so
+    // forcing them into A would trigger receipt-chasing D16 forbids there.
+    EXPENSE_BUCKET: ['A_TRIP_CASH', 'B_CLIENT_RECOVERABLE', 'C_EXTRAORDINARY', 'D_DIRECT_COMPANY'],
 
     SYNC_DIRECTION: ['PUSH', 'PULL'],
 
@@ -148,7 +151,7 @@ var LISTS = {
     // only LIVE_TAP / PHONE_REPORTED rows carry live visibility.
     EVENT_SOURCE: ['LR_TRANSCRIBED', 'LIVE_TAP', 'PHONE_REPORTED'],
 
-    EXPENSE_BUCKET: ['A_TRIP_CASH', 'B_CLIENT_RECOVERABLE', 'C_EXTRAORDINARY'],
+    EXPENSE_BUCKET: ['A_TRIP_CASH', 'B_CLIENT_RECOVERABLE', 'C_EXTRAORDINARY', 'D_DIRECT_COMPANY'],
 
     INTIMATION_CHECK: ['MATCHED', 'POST_FACTO_FLAGGED', 'BELOW_THRESHOLD'],
 
@@ -198,12 +201,10 @@ var LISTS = {
 
     INTIMATION_STATUS: ['OPEN', 'MATCHED', 'EXPIRED', 'CANCELLED'],
 
-    // NOTE: the supplier deduction types (SHORTAGE / DETENTION_CHARGEBACK /
-    // TDS / DAMAGE / OTHER) deliberately have NO list here yet. SCHEMA.md §5.13
-    // describes several deductions per payable, which is a child table, not a
-    // dropdown column - see the open question on SUPPLIER_PAYABLE_TRACKER in
-    // schema.gs. The list gets created once the owner rules on that shape, so
-    // that it is never a dropdown pretending one deduction is the maximum.
+    // SUPPLIER_PAYABLE_DEDUCTIONS.deduction_type - Amendment A12 (Checkpoint
+    // #2): one bill routinely carries several deductions (TDS + detention
+    // chargeback + damage), so deductions are a child register, one row each.
+    DEDUCTION_TYPE: ['SHORTAGE', 'DETENTION_CHARGEBACK', 'TDS', 'DAMAGE', 'OTHER'],
 
     // Amendment A2 - filled from CONFIG.TRAFFIC_MANAGERS, which the owner supplies.
     // Stays empty (and the dropdown is skipped) until he does.

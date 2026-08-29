@@ -17,18 +17,15 @@
  * cat_code · label_en · visibility_tier · receipt_required · ecount_template ·
  * default_bucket
  *
- * On the blank default_bucket values: D16's three buckets classify money that
- * moves through a DRIVER - his rate-card lump sum (A), what the client pays
- * back (B), and the extraordinary spend that needs pre-intimation (C). Diesel
- * and toll on own trucks are direct company costs and fit none of the three.
- * They are left blank rather than forced into a bucket, because a wrong bucket
- * on DIESEL would silently switch on receipt-chasing that D16 explicitly says
- * bucket A must never have. FLAGGED for an owner ruling at Checkpoint #2.
+ * Buckets: D16's three driver buckets plus D_DIRECT_COMPANY (Amendment A11,
+ * ruled at Checkpoint #2) for costs that move through no driver - diesel and
+ * toll on own trucks. OTHER keeps a blank default ON PURPOSE: it has no honest
+ * default, so the bucket is picked at entry time.
  */
 var EXPENSE_CATEGORIES_SEED = [
   // cat_code,             label_en,                     visibility_tier, receipt_required, ecount_template, default_bucket
-  ['DIESEL',               'Diesel',                     'ALL',           true,             'DIESEL_ENTRY',  ''],
-  ['TOLL',                 'Toll',                       'ALL',           true,             'TOLL_TAX',      ''],
+  ['DIESEL',               'Diesel',                     'ALL',           true,             'DIESEL_ENTRY',  'D_DIRECT_COMPANY'],
+  ['TOLL',                 'Toll',                       'ALL',           true,             'TOLL_TAX',      'D_DIRECT_COMPANY'],
   ['PARKING_PLAZA',        'Parking Plaza',              'ALL',           true,             'CASH_PAYMENT',  'B_CLIENT_RECOVERABLE'],
   ['EMPTY_YARD_UNLOAD',    'Empty Yard Unloading',       'ALL',           true,             'CASH_PAYMENT',  'B_CLIENT_RECOVERABLE'],
   ['ENROUTE_REPAIR',       'En-route Repair',            'ALL',           true,             'CASH_PAYMENT',  'C_EXTRAORDINARY'],
@@ -63,7 +60,8 @@ function idCounterSeeds_() {
     ['job_card_no_' + yy,      0],   // JC-YY-NNNN
     ['trip_expense_no_' + yy,  0],   // EXP-YY-NNNNN
     ['scrap_token_no_' + yy,   0],   // SCR-YY-NNNN
-    ['intimation_no_' + yy,    0]    // INT-YY-NNNNN
+    ['intimation_no_' + yy,    0],   // INT-YY-NNNNN
+    ['deduction_no_' + yy,     0]    // DED-YY-NNNNN (Amendment A12)
   ];
 }
 
@@ -97,6 +95,37 @@ function challanSeedInstruction_() {
          'so only the owner has this number. Apps Script editor -> Project Settings ' +
          '-> Script Properties -> add CHALLAN_SEED = that morning\'s next challan ' +
          'number (e.g. 43486), then run bootstrap() again.';
+}
+
+/**
+ * Fills a BLANK default_bucket from the seed table - and only a blank one.
+ * A bucket someone deliberately set later is never overwritten. This is how
+ * Amendment A11's ruling (DIESEL/TOLL -> D_DIRECT_COMPANY) reaches a sheet
+ * that was seeded before the ruling existed.
+ */
+function fillBlankBuckets_(cats, catsLast, report) {
+  if (catsLast < 2) return;
+
+  var seedBuckets = {};
+  EXPENSE_CATEGORIES_SEED.forEach(function (r) { seedBuckets[r[0]] = r[5]; });
+
+  var rows = cats.getRange(2, 1, catsLast - 1, 6).getValues();
+  var filled = [];
+
+  rows.forEach(function (r, i) {
+    var code = String(r[0]).trim();
+    var current = String(r[5]).trim();
+    var wanted = seedBuckets[code];
+    if (code && current === '' && wanted) {
+      cats.getRange(i + 2, 6).setValue(wanted);
+      filled.push(code + ' -> ' + wanted);
+    }
+  });
+
+  if (filled.length) {
+    report.push(['SEED', 'EXPENSE_CATEGORIES.default_bucket', 'PASS',
+      'filled per A11: ' + filled.join(', ')]);
+  }
 }
 
 /**
@@ -135,6 +164,7 @@ function seedGovernanceTables_(ssGov, report) {
   } else {
     report.push(['SEED', 'EXPENSE_CATEGORIES', 'SKIP',
       'already has ' + (catsLast - 1) + ' categories - left untouched']);
+    fillBlankBuckets_(cats, catsLast, report);
   }
 
   // ---- ID_COUNTERS -------------------------------------------------------

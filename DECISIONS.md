@@ -147,3 +147,13 @@ OUs control *settings/policy* (which apps are on, 2SV, device rules); Groups con
 3. Collections ≠ invoicing ≠ accounts — three separate flows, never merged into one address.
 4. business@ may carry aliases (e.g. info@, contact@) rather than creating separate groups.
 5. Every employee belongs to at least one internal group, so permission-granting is never done person-by-person.
+
+
+## AMENDMENT A11 (2026-08-30) — Fourth expense bucket: D_DIRECT_COMPANY (extends D16)
+Ruled by the owner at Checkpoint #2. D16's three buckets classify money that moves through a **driver**: his rate-card lump sum (A), what the client repays (B), extraordinary spend needing pre-intimation (C). Diesel and toll on own trucks move through no driver — they are direct company operating costs and fit none of the three. Forcing them into A would switch on the receipt-chasing D16 explicitly forbids there; into B would misstate recoverability. Bucket **D_DIRECT_COMPANY** added: company-paid operating costs, receipts kept as ordinary company records, no driver-audit implications. Seeded defaults: DIESEL → D, TOLL → D. **OTHER keeps a blank default deliberately** — it has no honest default, so its bucket is chosen at entry time.
+
+## AMENDMENT A12 (2026-08-30) — Supplier deductions become a child register
+Ruled by the owner at Checkpoint #2. One supplier bill routinely carries several deductions at once (TDS + negotiated detention chargeback + occasional damage), so a single `deductions` column cannot hold the truth. SCHEMA.md §5.13's packed column is replaced by register **§5.14 SUPPLIER_PAYABLE_DEDUCTIONS**: `deduction_id (DED-YY-NNNNN) · payable_id (FK) · deduction_type (SHORTAGE / DETENTION_CHARGEBACK / TDS / DAMAGE / OTHER) · amount · reason · entered_by · ts`. The auto-generated payment advice — the breakup sheet suppliers demand — itemizes from these rows.
+
+## AMENDMENT A13 (2026-08-30) — Collection Head = Billing (Sales) head; role list finalized at A9's 16
+Ruled at Checkpoint #2: the Collection Head and the Billing head are the **same human**, so per A1's own conditional ("Collection Head IF same human as Billing head — else +1 account") there is **one seat, one login**. No COLLECTION_HEAD role or account exists. The fabric's role list is exactly A9's 16 accounts; SCHEMA.md §3.1's older 14-role eCount mirror (VIEW_ONLY, COLLECTION_HEAD, TRAFFIC_MANAGER as fabric roles) is historical and superseded — TMs hold no accounts per A2, and read-only access is a Phase-2 permission concern, not a seat.

@@ -2,6 +2,12 @@
 **Status: APPROVED — Checkpoint #1 closed 2026-08-13. Phase 1 / Slice 1 build AUTHORIZED. This file is the canonical schema; all code conforms to it. Changes require a versioned amendment, never a silent edit.**
 Date: 2026-08-13 · Supersedes all SCHEMA_DRAFT_v* files (delete them from the project)
 
+**CHANGELOG FINAL → v4 (Checkpoint #2 closed 2026-08-30 — Amendments A11–A13 + Phase-1 build resolutions)**
+1. **A11 — fourth expense bucket D_DIRECT_COMPANY** for costs moving through no driver (diesel/toll on own trucks). DIESEL → D, TOLL → D; OTHER's default stays blank by design (picked at entry). Extends D16 without weakening it.
+2. **A12 — deductions child register:** §5.13's packed `deductions` column removed; NEW §5.14 SUPPLIER_PAYABLE_DEDUCTIONS (one row per deduction; payment advice itemizes from it). New ID: DED-YY-NNNNN.
+3. **A13 — role list finalized at A9's 16 accounts.** Collection Head = Billing (Sales) head, same human, one seat. §3.1's 14-role list superseded.
+4. **Phase-1 build resolutions folded in:** vernacular label columns removed from §3.2 (English-only lock) and `default_bucket` added · §4.1 `kem_owner` → `kam_owner` (A9) · §4.4 `pan/gst` → `pan_gst` · packed columns split (`ecount_push_template`+`ecount_push_batch_id`; `opened_by`/`opened_ts`/`closed_by`/`closed_ts`) · §5.5 built as two sheets (LR_BOOK_REGISTRY_BOOKS / LR_BOOK_REGISTRY_LEAVES) · §6.8 gains `driver_ack_method (THUMB/OTP)` + `driver_ack_ts` (the locked thumb/OTP acknowledgment now has columns).
+
 **CHANGELOG v3 → FINAL (closure decisions)**
 1. D19 **KAM price-entry resolved:** the deal-striker (Traffic Manager or owner) taps the AWARD into the Strike Ledger at the moment of the deal; the system auto-carries vehicle, supplier name, driver contact, and dispatch status onto the DO-LR-Challan view for KAM/client servicing — **price never shown to, or typed by, KAM**.
 2. D20 **three policies locked:** (a) intimation threshold ₹500, bill-match tolerance ±10% or ₹200 whichever larger, intimation expiry 48h after trip close; (b) lot invoicing per-client — CLIENTS_MASTER gains `lot_invoicing_policy (FULL_LOT_ONLY / SPLIT_ALLOWED)`, set by asking each client; (c) supplier balance due = POD/LR-return-at-office date + N days, **company default N = 30 (locked by owner, single config cell)**, per-supplier override column honoured.
@@ -81,6 +87,7 @@ Google Sheets, one **spreadsheet file per division** plus one governance file. A
 | Trip expense | `EXP-YY-NNNNN` | Fabric | EXP-26-00412 |
 | Scrap token | `SCR-YY-NNNN` | Fabric | SCR-26-0007 |
 | Doc pouch item | `DOC-<challan>-NN` | Fabric | DOC-43486-03 |
+| Supplier deduction | `DED-YY-NNNNN` | Fabric | DED-26-00012 |
 
 All counters live in `ID_COUNTERS` and are incremented inside a script lock (race-safe — replaces the old "LR Lock Service" idea, which now applies to *counters*, not LR numbers).
 
@@ -106,10 +113,11 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 | Column | Notes |
 |---|---|
 | cat_code (PK) | e.g. DIESEL, TOLL, PARKING_PLAZA, EMPTY_YARD_UNLOAD, ENROUTE_REPAIR, HAMALI, DETENTION_PAID, BORDER_FACILITATION, DRIVER_ADVANCE, OTHER |
-| label_en / label_hi / label_gu | vernacular MCQ labels |
+| label_en | English label only (vernacular columns removed — English-only lock, v4) |
 | visibility_tier | ALL / HEAD_PLUS / DIRECTOR_ONLY (BORDER_FACILITATION = DIRECTOR_ONLY per D9) |
 | receipt_required | bool |
 | ecount_template | which import template it flows to: DIESEL_ENTRY / TOLL_TAX / CASH_PAYMENT / JV |
+| default_bucket | A_TRIP_CASH / B_CLIENT_RECOVERABLE / C_EXTRAORDINARY / D_DIRECT_COMPANY (D16 + A11); blank for OTHER — picked at entry |
 
 ### 3.3 AUDIT_LOG *(append-only)*
 `log_id · ts · user_email · action · target_table · target_id · payload_summary · prev_row_hash · row_hash`
@@ -126,7 +134,7 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 ## 4. MASTER REGISTRIES (WB-MASTERS)
 
 ### 4.1 CLIENTS_MASTER
-`client_id (PK) · legal_name · gst_no · client_type (IMPORTER/EXPORTER/CHA/FORWARDER) · kem_owner (email) · billing_address · contact · payment_terms_days · lot_invoicing_policy (FULL_LOT_ONLY / SPLIT_ALLOWED — D20b) · status`
+`client_id (PK) · legal_name · gst_no · client_type (IMPORTER/EXPORTER/CHA/FORWARDER) · kam_owner (email) · billing_address · contact · payment_terms_days · lot_invoicing_policy (FULL_LOT_ONLY / SPLIT_ALLOWED — D20b) · status`
 
 ### 4.2 VEHICLES_MASTER
 `veh_no (PK, normalized: uppercase, no spaces) · ownership (OWN/MARKET) · supplier_id (if market) · truck_type · capacity_ft (20/40/ISO/OT/HC/REEFER) · purchase_date · purchase_value · amort_monthly · assigned_driver · status (ACTIVE/GARAGE/SOLD)`
@@ -136,7 +144,7 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 `driver_id (PK) · name · phone · licence_no · licence_expiry · assigned_veh · base_salary · status`
 
 ### 4.4 SUPPLIERS_MASTER
-`supplier_id (PK) · name · contact · pan/gst · vendor_type (TRANSPORT / PARTS / WORKSHOP) · network_owner (OWNER / which Traffic Manager — networks are mutually exclusive) · payment_terms_days · vehicles_typical · rating_notes · status`
+`supplier_id (PK) · name · contact · pan_gst · vendor_type (TRANSPORT / PARTS / WORKSHOP) · network_owner (OWNER / which Traffic Manager — networks are mutually exclusive) · payment_terms_days · vehicles_typical · rating_notes · status`
 
 ### 4.5 CONTRACT_RATES *(HEAD_PLUS visibility — this is the client-freight side of margin)*
 `rate_id (PK) · client_id · from_loc · to_loc · direction (IMP/EXP) · container_type · tonnage · client_freight · km · valid_from · valid_to · source_doc_ref · created_by · ts`
@@ -222,8 +230,12 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 > Flow (v3): breakdown calls land on the **owner** today — so owner (or delegated person; delegation slot built in) taps the 15-second intent entry ("tyre puncture, ~₹800, Vapi") → intimation is born, timestamped, under the intimator's login. The later bill must MATCH an OPEN intimation (same challan, same category, amount within tolerance) or the expense auto-flags. A fake bill now requires a pre-logged fake intimation — casual fraud becomes premeditated conspiracy with evidence attached.
 
 ### 5.13 SUPPLIER_PAYABLE_TRACKER — *late-payment → rate-retaliation visibility* [NEW in v2]
-`payable_id (PK) · supplier_id (FK) · challan_no (FK) · ecount_bill_ref · bill_amount · bill_date · pod_received_ts (LR-return reaches office — from DOC_POUCH) · due_date (pod_received_ts + N; company default N=30, per-supplier override — D20c) · paid_date (from eCount Payable Bill-by-Bill pull) · paid_amount · delay_days (computed) · deductions (structured: SHORTAGE / DETENTION_CHARGEBACK / TDS / DAMAGE / OTHER, each amount+reason) · payment_advice_ref (auto-generated per payment — the breakup sheet suppliers demand) · dispute_flag · notes`
+`payable_id (PK) · supplier_id (FK) · challan_no (FK) · ecount_bill_ref · bill_amount · bill_date · pod_received_ts (LR-return reaches office — from DOC_POUCH) · due_date (pod_received_ts + N; company default N=30, per-supplier override — D20c) · paid_date (from eCount Payable Bill-by-Bill pull) · paid_amount · delay_days (computed) · payment_advice_ref (auto-generated per payment — the breakup sheet suppliers demand; itemizes from §5.14) · dispute_flag · notes`
 > Extends to PARTS/WORKSHOP vendors (vendor_type) — the vendor-credit deadlock (unpaid fixed vendor stops supplying → forced spot-buying at worse prices) becomes a visible, dated trail. eCount remains SoR for the accounting entry; this register exists for the *operational join* eCount cannot make: per-supplier payment-delay trend × subsequent quote trend from STRIKE_LEDGER → the "we paid X 40 days late and his quotes rose 8%" report (HEAD_PLUS view). Adds `payment_terms_days` usage from SUPPLIERS_MASTER.
+
+### 5.14 SUPPLIER_PAYABLE_DEDUCTIONS — *itemized deductions per supplier bill* [NEW v4, Amendment A12]
+`deduction_id (PK: DED-YY-NNNNN) · payable_id (FK → §5.13) · deduction_type (SHORTAGE / DETENTION_CHARGEBACK / TDS / DAMAGE / OTHER) · amount · reason · entered_by · ts`
+> One row per deduction. A single bill routinely carries several at once (TDS + negotiated detention chargeback + occasional damage — owner's example at Checkpoint #2), so a packed column cannot hold the truth. The auto-generated payment advice itemizes from these rows.
 
 ---
 
@@ -254,7 +266,7 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 > The advance auto-fills from here at dispatch; the driver argues with a rate card, not a Master. Re-negotiations append a new version — history preserved, the "union fixed it in March" fight is over.
 
 ### 6.8 DRIVER_RECOVERY_LEDGER *(append-only)* [NEW v3]
-`rec_id (PK) · driver_id (FK) · entry_type (UNAUTHORIZED_EXPENSE / DAMAGE / PENALTY / ADVANCE_RECOVERY / CREDIT_ADJUSTMENT) · amount · reason (mandatory) · evidence_ref (exp_id / job_id / doc) · recorded_by · ts · settlement_status (OPEN / SETTLED / WAIVED) · settled_ts`
+`rec_id (PK) · driver_id (FK) · entry_type (UNAUTHORIZED_EXPENSE / DAMAGE / PENALTY / ADVANCE_RECOVERY / CREDIT_ADJUSTMENT) · amount · reason (mandatory) · evidence_ref (exp_id / job_id / doc) · recorded_by · ts · settlement_status (OPEN / SETTLED / WAIVED) · settled_ts · driver_ack_method (THUMB / OTP — locked, v4) · driver_ack_ts`
 > Replaces claims parked in one executive's memory/book "to be adjusted when the driver quits." Every claim now carries a reason, evidence, and timestamp — protecting the company at settlement AND the driver from arbitrary invention. ⚠ Governance note: large undocumented settlement deductions are labour-dispute fuel; this register is the mitigation, and driver acknowledgment at entry (thumb/OTP) is recommended — owner to decide.
 
 ### 6.9 SCRAP_SALES [NEW v3]
