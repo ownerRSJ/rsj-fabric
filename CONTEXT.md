@@ -19,5 +19,9 @@ OWNER = Ranjit Jha (all discretion, sits in garage, approves every job, receives
 - eCount FTL Register export leaks margin → eCount role permissions restricted per D12.
 - Timestamps are honest: most trip events are transcribed from the returned LR next day (source=LR_TRANSCRIBED); live tracking is a future telematics decision, not a form feature.
 
-## Current phase
-Checkpoint #1 CLOSED. Phase 1 (Slice 1 skeleton) AUTHORIZED. Checkpoints #2 (auth) and per-slice gates still ahead — the owner discusses each in his Claude project chat before authorizing the next phase.
+## Current phase (updated 2026-08-30)
+Checkpoints #1 and #2 both CLOSED. **Phase 1 skeleton is built, deployed and verified 147/148** — the four workbooks and all registers exist on Google under `owner@rsjcarriers.com`, protected owner-only, with the challan counter still unseeded.
+
+Checkpoint #2 produced Amendments **A11** (fourth expense bucket `D_DIRECT_COMPANY` — diesel/toll on own trucks move through no driver, so D16's three driver buckets don't fit them), **A12** (`SUPPLIER_PAYABLE_DEDUCTIONS` child register — one bill routinely carries TDS + detention chargeback + damage), **A13** (Collection Head and Billing head are the same human: one seat, one login; the role list is exactly A9's 16 accounts). SCHEMA.md is at **v4**.
+
+**Phase 2 (service layer) is authorized**, blocked only on the challan-seeding decision: the owner wants to transcribe FY-2026-27 history in to test the system, and the counter must not be seeded historically or it will mint numbers that collide with challans already written on paper. See SCHEMA.md §10 item 18. Per-slice gates for Phase 3 still ahead.

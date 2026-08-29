@@ -7,15 +7,19 @@
 4. **Identity settled:** Google Workspace (Outlook rejected — Apps Script auth is Google-only). 16 role-named accounts with an append-only custody log (who holds each seat, from when), admin@ as a write-rejected TOOL account, 9 free Groups (4 external-facing incl. public business@, 3 internal permission groups, do@ with Collaborative Inbox, escalations@ with two directors). Amendments A1–A10.
 5. **Handoff written:** SCHEMA.md · DECISIONS.md · CONTEXT.md · CLAUDE.md · PHASE1_BRIEF.md · ROADMAP.md — the six files that let any model, any session, continue without re-litigating.
 
-## WHERE WE ARE **RIGHT NOW**
-Workspace bought and configured · repo folder `rsj-fabric` on desktop · six files audited → drop them in, commit "blueprint approved — checkpoint 1 closed", push private.
+## WHERE WE ARE **RIGHT NOW** (updated 2026-08-30)
+**Phase 1 is BUILT and VERIFIED.** Apps Script project "RSJ Fabric" lives under `owner@rsjcarriers.com`; code deploys one-direction from this repo via `clasp push`. Four workbooks and all register sheets exist with exact headers, dropdowns, owner-only protection and seeded counters. `verify()` reports **147/148** — the single outstanding failure is `challan_no`, which needs the owner's live series number.
+
+**Checkpoint #2 is CLOSED** (2026-08-30). Three rulings taken → Amendments **A11** (fourth expense bucket D_DIRECT_COMPANY), **A12** (SUPPLIER_PAYABLE_DEDUCTIONS child register), **A13** (Collection Head = Billing head; role list final at A9's 16). SCHEMA.md is now **v4**; structure is 34 sheets / 360 columns.
+
+**Phase 2 is AUTHORIZED**, blocked on one open decision: how to seed the challan counter given the owner's wish to backfill FY-2026-27 history for testing (SCHEMA.md §10 item 18). Architect's recommendation: seed the counter at today's live number for MINTING only; historical trips enter via a Phase-2 transcription door carrying their own paper challan numbers, era-flagged, with eCount push withheld pending the CA's ruling. **Owner deciding.**
 
 ## PHASES AHEAD (each gate = a conversation in the Claude project chat BEFORE the next build step)
 
-**PHASE 1 — Skeleton (Claude Code, + human work in parallel)**
+**PHASE 1 — Skeleton (Claude Code, + human work in parallel)** ✅ **DONE 2026-08-30** (bar the challan seed)
 Bootstrap script creates 4 workbooks, all sheets, exact headers, dropdowns, protections, seeded counters (owner supplies that morning's next challan number), verification prints all-PASS.
-Parallel human work: master-data cleanup (trucks normalized, clients with lot policy asked, suppliers with network_owner, drivers, union rate-card matrix, vehicle-docs list) · Workspace hardening (2SV, Tools OU for admin@) · baselines measured (unbilled detention last quarter, cash-out vs receipts-back, % invoices >7 days late, avg supplier payment delay).
-**🛑 GATE: return to project chat → CHECKPOINT #2 (auth & service-layer walkthrough).**
+Parallel human work **still outstanding**: master-data cleanup (trucks normalized, clients with lot policy asked, suppliers with network_owner, drivers, union rate-card matrix, vehicle-docs list) · Workspace hardening (2SV, Tools OU for admin@) · baselines measured (unbilled detention last quarter, cash-out vs receipts-back, % invoices >7 days late, avg supplier payment delay) · Traffic Manager name list for `sourced_by_tm` (A2).
+**🛑 GATE: CHECKPOINT #2 — CLOSED 2026-08-30 (A11–A13). Phase 2 authorized pending the challan-seed decision.**
 
 **PHASE 2 — Service layer (Deliverable 2)**
 Auth against USERS_ROLES · role gates on every server call · TOOL-account write rejection · hash-chained AUDIT_LOG writer · ID minting under LockService · LR Book Registry logic · direct sheet edit access revoked (the moment append-only becomes real). No visible UI.

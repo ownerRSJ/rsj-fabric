@@ -304,6 +304,7 @@ R=read, W=write(append), A=approve, ✕=no access. Directors/Owner = full. VIEW_
 | INVOICE_TRACKER | R | ✕ | ✕ | ✕ | R | ✕ | W | W | ✕ |
 | EXPENSE_INTIMATIONS | ✕ | R | W | W | R | R | ✕ | ✕ | ✕ |
 | SUPPLIER_PAYABLE | ✕ | R | ✕ | ✕ | ✕ | W | ✕ | ✕ | ✕ |
+| SUPPLIER_PAYABLE_DEDUCTIONS (§5.14) | ✕ | R | ✕ | ✕ | ✕ | W | ✕ | ✕ | ✕ |
 | Payment-delay×quote view | ✕ | R | ✕ | ✕ | ✕ | ✕ | ✕ | ✕ | ✕ |
 | FLEET tables (6.1–6.6) | ✕ | ✕ | ✕ | ✕ | R | A(salary/₹) | ✕ | ✕ | W (owner approves per D18) |
 | RATE_CARD / RECOVERY / SCRAP_SALES | ✕ | ✕ | ✕ | ✕ | ✕ | R | ✕ | ✕ | W (owner A) |
@@ -351,7 +352,11 @@ BORDER_FACILITATION expense rows: visible to Cashier + Directors only, per D9.
 10. ~~Workspace~~ **RESOLVED — live; configure per D21 during Phase 1.**
 11. **Baselines (2 days manual, §11):** measure before Slice 1 goes live or success is unprovable.
 12. **Pilot pick:** one corridor (JNPT suggested — 85% of volume), one Master, one Traffic Manager for first two weeks.
-13. ~~Driver acknowledgment~~ **RESOLVED — YES, locked.**
+13. ~~Driver acknowledgment~~ **RESOLVED — YES, locked.** Columns `driver_ack_method` + `driver_ack_ts` added to §6.8 in v4.
+15. ~~Diesel/toll expense bucket~~ **RESOLVED (A11)** — fourth bucket D_DIRECT_COMPANY. OTHER stays blank by design.
+16. ~~Supplier deduction cardinality~~ **RESOLVED (A12)** — child register §5.14, several per bill.
+17. ~~Collection Head seat~~ **RESOLVED (A13)** — same human as Billing head; one login, no COLLECTION_HEAD role.
+18. **OPEN — historical backfill / challan seeding.** Owner wants FY-2026-27 (April) data transcribed in to test the system. The counter must NOT be seeded historically (it would mint numbers that collide with challans already written on paper). Recommended: seed at today's live next number for MINTING only, plus a Phase-2 transcription door that carries each historical trip's OWN paper challan number, validated unique and below the seed, every row stamped with a backfill era flag. eCount push batches for backfill rows withheld pending the CA's ruling on entering past months into statutory books. **Awaiting owner's decision — blocks Phase 2 start.**
 14. ⚠ **Owner-bottleneck note (D18):** every garage approval routes through one phone. Accepted for now at owner's insistence; revisit at >120 trucks or when approval latency starts parking trucks.
 
 ---
@@ -361,7 +366,7 @@ BORDER_FACILITATION expense rows: visible to Cashier + Directors only, per D9.
 | Slice | Closes leaks | Registers built | Gate to next slice |
 |---|---|---|---|
 | **1 — Money spent, not recovered** | detention untracked; receipts never reach invoice; late invoicing; fake transit bills | WB-GOV all · WB-MASTERS all · DO_REGISTER · CHALLAN_REGISTER · LR_REGISTER · LR_BOOK_REGISTRY · TRIP_EVENTS · TRIP_EXPENSES · EXPENSE_INTIMATIONS · CASH_FLOAT · DOC_POUCH · INVOICE_TRACKER | Part-1 walkthrough passed; pilot corridor running 2 weeks |
-| **2 — Supplier overpayment** | no quote visibility; late-payment rate retaliation | STRIKE_LEDGER · SUPPLIER_PAYABLE_TRACKER · CONTRACT_RATES views | Part-2 walkthrough (ops half) passed |
+| **2 — Supplier overpayment** | no quote visibility; late-payment rate retaliation | STRIKE_LEDGER · SUPPLIER_PAYABLE_TRACKER · SUPPLIER_PAYABLE_DEDUCTIONS · CONTRACT_RATES views | Part-2 walkthrough (ops half) passed |
 | **3 — Fleet leaks** | repeat garage expenses; RTO doc lapses; driver advance leverage | GARAGE_GATE_LOG · JOB_CARDS · PARTS_ISSUE · SCRAP_TOKENS · VEHICLE_DOCS · DRIVER_SALARY_LEDGER | Part-2 walkthrough (fleet half) passed |
 | **4 — Time & blindness** | unit-economics blind spot; idle/backhaul waste | none — computed views (UNIT_ECONOMICS, time-death report, empty-vehicle × open-DO match list) over slices 1–3 | Slices 1–3 producing data |
 

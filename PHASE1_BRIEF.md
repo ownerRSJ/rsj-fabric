@@ -1,5 +1,11 @@
 # PHASE1_BRIEF.md — first Claude Code session instructions
 
+> **STATUS: COMPLETE (2026-08-30).** The skeleton is built, deployed and verified 147/148; the
+> only outstanding item is the `CHALLAN_SEED` script property. The human work listed at the
+> bottom of this file is still outstanding. Deployment steps now live in `DEPLOY.md`; current
+> project state lives in `ROADMAP.md`. This file is kept as the record of what Phase 1 was
+> asked to do.
+
 ## Owner's one-time setup (15–60 min, do once, in order)
 1. Install Node.js LTS from nodejs.org, then in a terminal: `npm install -g @google/clasp`
 2. `clasp login` — log in with your NEW @rsjcarriers.com daily account (not admin@).
