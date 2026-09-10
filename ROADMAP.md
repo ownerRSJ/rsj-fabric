@@ -12,7 +12,9 @@
 
 **Checkpoint #2 is CLOSED** (2026-08-30). Three rulings taken → Amendments **A11** (fourth expense bucket D_DIRECT_COMPANY), **A12** (SUPPLIER_PAYABLE_DEDUCTIONS child register), **A13** (Collection Head = Billing head; role list final at A9's 16). SCHEMA.md is now **v4**; structure is 34 sheets / 360 columns.
 
-**Phase 2 is AUTHORIZED**, blocked on one open decision: how to seed the challan counter given the owner's wish to backfill FY-2026-27 history for testing (SCHEMA.md §10 item 18). Architect's recommendation: seed the counter at today's live number for MINTING only; historical trips enter via a Phase-2 transcription door carrying their own paper challan numbers, era-flagged, with eCount push withheld pending the CA's ruling. **Owner deciding.**
+**Amendments A14–A15 then redesigned challan birth** (SCHEMA.md now **v5**): numbers are born **per series** — JNPT off the printed paper book, leaf-tracked in the new CHALLAN_BOOK_REGISTRY (the printer mints; the fabric indexes); Hazira fabric-minted `H<number>`. `challan_no` is alphanumeric; `CHALLAN_SEED` retired.
+
+**Phase 2 is AUTHORIZED and UNBLOCKED.** §10 item 18 is resolved: the April full-history wish was withdrawn for a **≤ 2-week** test window, then rapid cutover. **Go-live-morning ritual** (replaces the old seed step): that morning, register the JNPT book currently in play — its printed range and next blank leaf — and set the Hazira counter to that morning's next number; both owner-supplied, never invented, never captured early (~100 challans go in every 2–3 days, so any earlier number is stale by lunch).
 
 ## PHASES AHEAD (each gate = a conversation in the Claude project chat BEFORE the next build step)
 

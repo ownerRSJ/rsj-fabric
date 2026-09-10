@@ -13,6 +13,7 @@ OWNER = Ranjit Jha (all discretion, sits in garage, approves every job, receives
 
 ## Key mechanics to never forget
 - Paper LR book is the LR number mint (D3). Registry tracks leaves; execs tap next leaf.
+- **Challan numbers are per-series (A14):** the JNPT printed book mints its own — the fabric indexes it as leaves, never competes with it; Hazira has no book, so the fabric genuinely mints `H<number>`. Cancelled leaves stay in the registry and never become trip rows.
 - Drivers have NO accounts; they interact via Masters and phone calls to the owner.
 - Trip cash is a rate-card lump sum the driver KEEPS savings from (bucket A — never audited, D16).
 - Supplier flow: fresh quote every trip (no standing rates), 80–90% advance at dispatch, balance after POD return, formal supplier bill, supplier demands payment advice showing deductions.
@@ -20,8 +21,10 @@ OWNER = Ranjit Jha (all discretion, sits in garage, approves every job, receives
 - Timestamps are honest: most trip events are transcribed from the returned LR next day (source=LR_TRANSCRIBED); live tracking is a future telematics decision, not a form feature.
 
 ## Current phase (updated 2026-08-30)
-Checkpoints #1 and #2 both CLOSED. **Phase 1 skeleton is built, deployed and verified 147/148** — the four workbooks and all registers exist on Google under `owner@rsjcarriers.com`, protected owner-only, with the challan counter still unseeded.
+Checkpoints #1 and #2 both CLOSED. **Phase 1 skeleton is built, deployed and verified** — the four workbooks and all registers exist on Google under `owner@rsjcarriers.com`, protected owner-only.
 
-Checkpoint #2 produced Amendments **A11** (fourth expense bucket `D_DIRECT_COMPANY` — diesel/toll on own trucks move through no driver, so D16's three driver buckets don't fit them), **A12** (`SUPPLIER_PAYABLE_DEDUCTIONS` child register — one bill routinely carries TDS + detention chargeback + damage), **A13** (Collection Head and Billing head are the same human: one seat, one login; the role list is exactly A9's 16 accounts). SCHEMA.md is at **v4**.
+Checkpoint #2 produced Amendments **A11** (fourth expense bucket `D_DIRECT_COMPANY` — diesel/toll on own trucks move through no driver, so D16's three driver buckets don't fit them), **A12** (`SUPPLIER_PAYABLE_DEDUCTIONS` child register — one bill routinely carries TDS + detention chargeback + damage), **A13** (Collection Head and Billing head are the same human: one seat, one login; the role list is exactly A9's 16 accounts).
 
-**Phase 2 (service layer) is authorized**, blocked only on the challan-seeding decision: the owner wants to transcribe FY-2026-27 history in to test the system, and the counter must not be seeded historically or it will mint numbers that collide with challans already written on paper. See SCHEMA.md §10 item 18. Per-slice gates for Phase 3 still ahead.
+Then **A14–A15** replaced the challan model: challan numbers are born **per series** — JNPT off the **printed paper book** (bare numeric, leaf-tracked in the new §5.15 CHALLAN_BOOK_REGISTRY, because the printer mints what the fabric cannot), Hazira **fabric-minted `H<number>`** (it never had a paper book). `challan_no` is alphanumeric; `CHALLAN_SEED` is retired. **§10 item 18 is RESOLVED:** the April full-history wish was withdrawn in favour of a **≤ 2-week** test window, and seeding happens on **go-live morning** — register the JNPT book in play, set the Hazira counter — never earlier, because ~100 challans are consumed every 2–3 days. SCHEMA.md is at **v5**.
+
+**Phase 2 (service layer) is authorized and UNBLOCKED.** Per-slice gates for Phase 3 still ahead.

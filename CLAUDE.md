@@ -17,6 +17,7 @@ You are building an internal anti-fraud operations system for RSJ Carriers Pvt. 
 7. **UI is tap/MCQ-first, English labels, minimal typing** — users are low-literacy field staff. No free-text where a dropdown can exist.
 8. **eCount integration is file-based** (Excel import templates OUT, register exports IN for reconciliation only). There is NO eCount API. Never re-key into eCount what the fabric already captured.
 9. Normalize vehicle numbers everywhere: uppercase, strip spaces (`MH46CU 5326` → `MH46CU5326`).
+9a. **Challan numbers are PER-SERIES (A14):** JNPT = bare numeric leaf-tracked from the printed book (registry, not counter); Hazira = fabric-minted `H<number>`. Never assume a single challan counter. `CHALLAN_SEED` no longer exists.
 10. **No secrets in the repo.** Script IDs, keys → Script Properties. Repo stays private.
 
 ## WORKFLOW RULES
@@ -26,4 +27,4 @@ You are building an internal anti-fraud operations system for RSJ Carriers Pvt. 
 - Existing legacy files (Tracker Code.gs/Tracker.html etc.) are REFERENCE ONLY in Phase 1 — do not modify them yet.
 
 ## VOCABULARY
-DO = client's Delivery Order (client-owned number; our file no = RSJ-DO-YY-NNNN). LR = Lorry Receipt (paper book leaf, one per container/truck placement). Challan = the trip (one vehicle dispatch, may carry multiple LRs). Master = Import/Export field executive (LR books, cash float, receipt collection). eCount = third-party cloud ERP (statutory SoR). Bucket A/B/C = expense taxonomy per D16.
+DO = client's Delivery Order (client-owned number; our file no = RSJ-DO-YY-NNNN). LR = Lorry Receipt (paper book leaf, one per container/truck placement). Challan = the trip (one vehicle dispatch, may carry multiple LRs); its number is born per series — JNPT off the printed paper book, Hazira minted as `H<number>` (A14). Master = Import/Export field executive (LR books, cash float, receipt collection). eCount = third-party cloud ERP (statutory SoR). Bucket A/B/C = expense taxonomy per D16.

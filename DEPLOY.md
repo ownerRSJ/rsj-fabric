@@ -76,33 +76,58 @@ and press **Run**.
 The first run asks you to authorize the script — approve it. (Google will warn
 that the app "isn't verified"; that is normal for your own script. Choose
 **Advanced → Go to RSJ Fabric**.) It takes a couple of minutes because it is
-creating four spreadsheets and 33 sheets.
+creating four spreadsheets and 36 sheets.
 
 Running it a second time is safe. It never deletes a sheet, never rewrites a
 header row that already has content, and never resets a counter that has moved.
 
-## Step 6 — Give the script the owner's challan number
+## Step 6 — The go-live-morning ritual
 
-**This is the one number only your father can supply.**
+> **Do this on the MORNING you go live — not before.** Around 100 challans are
+> consumed every two or three days, so a number written down last week is wrong
+> by lunchtime. This step is deliberately the last thing that happens.
 
-The challan series continues the numbering already in live use (D6) — it does
-**not** start at 1. Ask him for the **next challan number** that would have been
-written by hand.
+There is no longer a single challan number, and no `CHALLAN_SEED` property.
+Challans are born **per series** (Amendment A14), so there are two separate
+things to record, and they work differently on purpose.
 
-You can do this before or after step 5 — the skeleton gets built either way, and
-`bootstrap()` simply reports the counter as missing until you set it. What it
-will never do is invent a starting number.
+### 6a. JNPT — register the paper book in play
+
+JNPT's numbers are **printed on the paper book by the printer**. The system does
+not invent them; it keeps an index of the book so the two can never drift apart.
+It is the same arrangement as the LR book.
+
+From the challan book currently in use, your father supplies:
+
+| What | Example |
+|---|---|
+| The book's printed range — first and last leaf | `43500` to `43599` |
+| The next **blank** leaf as of that morning | `43512` |
+
+Anything already used or struck through in that book gets recorded as used or
+cancelled — and a cancelled leaf keeps its reason and never becomes a trip.
+
+### 6b. Hazira — set the counter
+
+Hazira has **no paper book**; its series has always been digital, currently in
+the 9000s. Here the system genuinely does mint the number, and it carries an `H`
+so it can never be confused with a JNPT number.
 
 In the Apps Script editor: **Project Settings** (the gear on the left) →
 **Script Properties** → **Add script property**
 
 | Property | Value |
 |---|---|
-| `CHALLAN_SEED` | the number he gives you, e.g. `43486` |
+| `HAZIRA_CHALLAN_SEED` | that morning's next Hazira number, e.g. `9123` |
 
-It lives here, not in the code, so the number never lands in the repo.
+Enter the plain number — the `H` is added by the system. It lives here, not in
+the code, so the number never lands in the repo.
 
 Then run `bootstrap` once more to write the counter.
+
+**Both are owner-supplied and never invented.** Seeding early, or from history,
+mints numbers that collide with challans already written on paper — and that
+duplicate error would come from inside the house.
 
 ## Step 7 — Check the work
 
@@ -119,8 +144,9 @@ does not fit in the log.
 
 - `FAIL` — something is genuinely wrong. Bring the log back here.
 - `WARN` — nothing is broken; a real-world fact is still outstanding (Traffic
-  Manager names, the empty user roster, unbucketed expense categories). These are
-  expected at this stage and are listed in the handover notes.
+  Manager names, the empty user roster, and — until go-live morning — the
+  unregistered JNPT book and unseeded Hazira counter). These are expected at this
+  stage and are listed in the handover notes.
 
 Run `showWorkbookLinks` to print the four spreadsheet URLs, and open each one to
 see the sheets with your own eyes. That is the Phase 1 definition of done.
