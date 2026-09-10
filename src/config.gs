@@ -51,12 +51,23 @@ var CONFIG = {
   // Left empty deliberately: bootstrap will not invent people's names.
   TRAFFIC_MANAGERS: [],
 
-  /* ---- ID counter seeding (PHASE1_BRIEF item 3) ------------------------- */
+  /* ---- Challan seeding, per series (A14 / A15) -------------------------- */
 
-  // The challan series continues the LIVE eCount numeric series (D6) - it does
-  // NOT start at 1. The owner supplies that morning's next challan number, and
-  // it is read from Script Properties so it is never committed to the repo.
-  CHALLAN_SEED_PROPERTY_KEY: 'CHALLAN_SEED',
+  // A14 retired the single CHALLAN_SEED. Challan numbers are born per series:
+  //
+  //   JNPT   - the printed paper book mints them. NO counter exists; the
+  //            fabric indexes the book in CHALLAN_BOOK_REGISTRY instead.
+  //   HAZIRA - no paper book, so the fabric genuinely mints: H<number>,
+  //            continuing the existing series (currently in the 9000s).
+  //
+  // A15: both are set on GO-LIVE MORNING, never earlier - at ~100 challans
+  // consumed every 2-3 days, a number captured last week is wrong by lunch.
+  // Read from Script Properties so it is never committed to the repo.
+  HAZIRA_CHALLAN_SEED_PROPERTY_KEY: 'HAZIRA_CHALLAN_SEED',
+
+  // The prefix that keeps series from colliding. Rule (A14): no prefix = JNPT
+  // legacy series; a letter prefix = that location's own series.
+  CHALLAN_SERIES_PREFIX: { JNPT: '', HAZIRA: 'H' },
 
   /* ---- Cosmetic --------------------------------------------------------- */
 

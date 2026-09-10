@@ -258,12 +258,21 @@ function verifySeeds_(props, report) {
       .filter(function (r) { return String(r[0]).trim() !== ''; });
     report.push(['SEED', 'ID_COUNTERS', 'PASS', cRows.length + ' counters present']);
 
-    var challan = cRows.filter(function (r) { return r[0] === 'challan_no'; })[0];
-    if (!challan) {
-      report.push(['SEED', 'ID_COUNTERS.challan_no', 'FAIL', challanSeedInstruction_()]);
+    // A14/A15: JNPT has no counter by design, and the Hazira counter is not
+    // expected until go-live morning. Neither absence is a build failure -
+    // both are pre-go-live warnings.
+    var hazira = cRows.filter(function (r) { return r[0] === 'hazira_challan'; })[0];
+    if (!hazira) {
+      report.push(['GO-LIVE', 'ID_COUNTERS.hazira_challan', 'WARN', haziraSeedInstruction_()]);
     } else {
-      report.push(['SEED', 'ID_COUNTERS.challan_no', Number(challan[1]) > 0 ? 'PASS' : 'FAIL',
-        'seeded at ' + challan[1] + ' (must continue the live series, D6)']);
+      report.push(['GO-LIVE', 'ID_COUNTERS.hazira_challan', Number(hazira[1]) > 0 ? 'PASS' : 'WARN',
+        'seeded at H' + hazira[1] + ' (continues the live Hazira series, A14)']);
+    }
+
+    if (cRows.filter(function (r) { return r[0] === 'challan_no'; }).length) {
+      report.push(['SEED', 'ID_COUNTERS.challan_no', 'WARN',
+        'a legacy single challan_no counter exists - A14 retired it. JNPT mints ' +
+        'from the printed book, not a counter. Remove this row before go-live.']);
     }
   } else {
     report.push(['SEED', 'ID_COUNTERS', 'FAIL', 'not seeded']);
@@ -273,6 +282,35 @@ function verifySeeds_(props, report) {
   if (!CONFIG.TRAFFIC_MANAGERS.length) {
     report.push(['CONFIG', 'TRAFFIC_MANAGERS', 'WARN',
       'empty - owner must supply the TM names for STRIKE_LEDGER.sourced_by_tm (A2)']);
+  }
+
+  // ---- JNPT challan book (A14/A15) --------------------------------------
+  var opsId = props.getProperty(CONFIG.WORKBOOKS.WB_OPS.propertyKey);
+  if (opsId) {
+    try {
+      var ssOps = SpreadsheetApp.openById(opsId);
+      var books = ssOps.getSheetByName('CHALLAN_BOOK_REGISTRY_BOOKS');
+      if (books) {
+        var bookLast = lastDataRow_(books, 1);
+        if (bookLast < 2) {
+          report.push(['GO-LIVE', 'CHALLAN_BOOK_REGISTRY_BOOKS', 'WARN', jnptBookInstruction_()]);
+        } else {
+          var bookRows = books.getRange(2, 1, bookLast - 1, 7).getValues()
+            .filter(function (r) { return String(r[0]).trim() !== ''; });
+          var active = bookRows.filter(function (r) {
+            return String(r[1]).trim() === 'JNPT' && String(r[6]).trim() === 'ACTIVE';
+          });
+          // A14 rule: exactly one ACTIVE book per series. Two would make "the
+          // next blank leaf" ambiguous, which is the drift this register exists
+          // to prevent.
+          report.push(['GO-LIVE', 'CHALLAN_BOOK_REGISTRY_BOOKS',
+            active.length === 1 ? 'PASS' : 'FAIL',
+            active.length === 1
+              ? 'one ACTIVE JNPT book, leaves ' + active[0][2] + '-' + active[0][3]
+              : active.length + ' ACTIVE JNPT books found - A14 requires exactly one']);
+        }
+      }
+    } catch (e) { /* WB-OPS already reported unopenable above */ }
   }
 
   var usersSheet = ss.getSheetByName('USERS_ROLES');

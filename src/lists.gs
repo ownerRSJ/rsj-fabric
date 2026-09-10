@@ -127,6 +127,19 @@ var LISTS = {
 
     BOOK_STATUS: ['ACTIVE', 'EXHAUSTED', 'LOST'],
 
+    // A14: which series a challan was born into. No prefix = JNPT legacy
+    // series; a letter prefix = that location's own series. Future bases
+    // (Baroda, Mundra, ...) are added here as they open.
+    CHALLAN_SERIES: ['JNPT', 'HAZIRA'],
+
+    // Challan books are never LOST the way an LR book can be - a printed book
+    // that must be withdrawn is VOID.
+    CHALLAN_BOOK_STATUS: ['ACTIVE', 'EXHAUSTED', 'VOID'],
+
+    // No LOST state: a printed challan leaf is either blank, used, or
+    // cancelled with a reason.
+    CHALLAN_LEAF_STATUS: ['BLANK', 'USED', 'CANCELLED'],
+
     // A leaf goes BLANK -> USED exactly once; duplicate use is structurally rejected
     LEAF_STATUS: ['BLANK', 'USED', 'CANCELLED', 'LOST'],
 

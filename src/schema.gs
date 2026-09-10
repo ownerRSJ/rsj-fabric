@@ -231,10 +231,14 @@ var FABRIC_SCHEMA = {
         { h: 'row_hash' }
       ] },
 
-    { name: 'CHALLAN_REGISTER', ref: 'SCHEMA.md §5.3', appendOnly: false,
-      note: 'The trip - the internal audit spine. awarded_strike_id ties the trip to the winning bid: that join is the fraud trace.',
+    { name: 'CHALLAN_REGISTER', ref: 'SCHEMA.md §5.3 (Amendment A14)', appendOnly: false,
+      note: 'The trip - the internal audit spine. awarded_strike_id ties the trip to the winning bid: that join is the fraud trace. challan_no is ALPHANUMERIC and born per series (A14): JNPT bare numeric off the printed book, Hazira minted as H<number>. Cancelled leaves live in CHALLAN_BOOK_REGISTRY and never occupy a row here.',
       columns: [
         { h: 'challan_no' },
+        // A14: text-sorting lies - "H9999" sorts above "H10000" - so the
+        // series and the clean numeric part are stored alongside the key.
+        { h: 'challan_series', t: 'LIST:CHALLAN_SERIES' },
+        { h: 'challan_seq', t: 'INT' },
         { h: 'release_ts', t: 'TS' },
         { h: 'veh_no' },
         { h: 'driver_id' },
@@ -294,6 +298,32 @@ var FABRIC_SCHEMA = {
         { h: 'used_on_challan' },
         { h: 'status_ts', t: 'TS' },
         { h: 'status_by' }
+      ] },
+
+    // A14: the JNPT printed challan book, indexed the same way §5.5 indexes
+    // the paper LR book. The printer mints these numbers; the fabric records
+    // which leaf went where, so the two can never drift apart.
+    { name: 'CHALLAN_BOOK_REGISTRY_BOOKS', ref: 'SCHEMA.md §5.15 (Books)', appendOnly: false,
+      note: 'One ACTIVE book per series at a time. Hazira has no rows here - it has no paper book and mints from a counter instead.',
+      columns: [
+        { h: 'book_id' },
+        { h: 'series',    t: 'LIST:CHALLAN_SERIES' },
+        { h: 'leaf_from', t: 'INT' },
+        { h: 'leaf_to',   t: 'INT' },
+        { h: 'printed_by' },
+        { h: 'received_ts', t: 'TS' },
+        { h: 'status', t: 'LIST:CHALLAN_BOOK_STATUS' }
+      ] },
+
+    { name: 'CHALLAN_BOOK_REGISTRY_LEAVES', ref: 'SCHEMA.md §5.15 (Leaves)', appendOnly: false,
+      note: 'A leaf goes BLANK -> USED exactly once, so duplicate use is structurally rejected. CANCELLED requires a reason and surfaces on an exceptions view. Dispatch offers the next BLANK leaf only - no typing. A cancelled leaf never became a trip and never gets a CHALLAN_REGISTER row.',
+      columns: [
+        { h: 'challan_no' },
+        { h: 'book_id' },
+        { h: 'leaf_status', t: 'LIST:CHALLAN_LEAF_STATUS' },
+        { h: 'used_ts', t: 'TS' },
+        { h: 'status_by' },
+        { h: 'cancel_reason' }
       ] },
 
     { name: 'TRIP_EVENTS', ref: 'SCHEMA.md §5.6', appendOnly: true,

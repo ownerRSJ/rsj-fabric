@@ -66,35 +66,49 @@ function idCounterSeeds_() {
 }
 
 /**
- * Reads the owner-supplied challan seed. Refuses to guess.
+ * Reads the owner-supplied HAZIRA challan seed. Refuses to guess.
  *
- * Returns null when the owner has not supplied it yet - that is a normal state
- * on the day the skeleton is built, not an error. It becomes an error at
- * verify() time, which FAILS until the counter holds a real number.
+ * A14 retired the single CHALLAN_SEED. Only Hazira has a counter - JNPT's
+ * numbers are printed on paper and tracked as leaves in
+ * CHALLAN_BOOK_REGISTRY_LEAVES, never minted.
+ *
+ * Returns null when the owner has not supplied it yet, which is the normal
+ * state until go-live morning (A15) - not an error. verify() reports it as a
+ * pre-go-live WARNING rather than a failure, because the skeleton is complete
+ * without it and the number would be stale if captured early.
  */
-function readChallanSeed_() {
+function readHaziraChallanSeed_() {
   var raw = PropertiesService.getScriptProperties()
-    .getProperty(CONFIG.CHALLAN_SEED_PROPERTY_KEY);
+    .getProperty(CONFIG.HAZIRA_CHALLAN_SEED_PROPERTY_KEY);
 
   if (raw === null || String(raw).trim() === '') return null;
 
   var n = Number(String(raw).trim());
   if (!isFinite(n) || n <= 0 || Math.floor(n) !== n) {
     throw new Error(
-      'CHALLAN_SEED must be a whole positive number. Found: "' + raw + '".\n\n' +
-      'It is the NEXT challan number in the series already in live use (D6) - ' +
-      'e.g. 43486. It does not start at 1.'
+      'HAZIRA_CHALLAN_SEED must be a whole positive number, entered WITHOUT the ' +
+      'H prefix. Found: "' + raw + '".\n\n' +
+      'It is that morning\'s NEXT Hazira challan number - the series is already ' +
+      'in the 9000s, e.g. 9123. It does not start at 1.'
     );
   }
   return n;
 }
 
-/** The instruction the owner needs when the seed is still missing. */
-function challanSeedInstruction_() {
-  return 'challan_no NOT seeded - the series continues the live numbering (D6), ' +
-         'so only the owner has this number. Apps Script editor -> Project Settings ' +
-         '-> Script Properties -> add CHALLAN_SEED = that morning\'s next challan ' +
-         'number (e.g. 43486), then run bootstrap() again.';
+/** The instruction the owner needs while the Hazira counter is unseeded. */
+function haziraSeedInstruction_() {
+  return 'hazira_challan counter NOT seeded - expected until GO-LIVE MORNING (A15). ' +
+         'Apps Script editor -> Project Settings -> Script Properties -> add ' +
+         'HAZIRA_CHALLAN_SEED = that morning\'s next Hazira number without the H ' +
+         '(e.g. 9123), then run bootstrap() again.';
+}
+
+/** The instruction the owner needs while no JNPT book is registered. */
+function jnptBookInstruction_() {
+  return 'no ACTIVE JNPT challan book registered - expected until GO-LIVE MORNING ' +
+         '(A15). JNPT numbers are printed on the paper book, never minted: that ' +
+         'morning, register the book in play (printed range + next blank leaf). ' +
+         'The registration screen is Phase 2 work.';
 }
 
 /**
@@ -178,11 +192,13 @@ function seedGovernanceTables_(ssGov, report) {
 
   var rows = idCounterSeeds_();
 
-  var challanSeed = readChallanSeed_();
-  if (challanSeed !== null) {
-    rows.unshift(['challan_no', challanSeed]);
-  } else if (!existing['challan_no']) {
-    report.push(['SEED', 'ID_COUNTERS.challan_no', 'WARN', challanSeedInstruction_()]);
+  // A14: per-series challan counters. JNPT deliberately has NO counter - its
+  // numbers come off the printed book. Only Hazira mints.
+  var haziraSeed = readHaziraChallanSeed_();
+  if (haziraSeed !== null) {
+    rows.unshift(['hazira_challan', haziraSeed]);
+  } else if (!existing['hazira_challan']) {
+    report.push(['SEED', 'ID_COUNTERS.hazira_challan', 'WARN', haziraSeedInstruction_()]);
   }
 
   var toWrite = rows
