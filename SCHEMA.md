@@ -1,6 +1,10 @@
 # RSJ CARRIERS — MASTER SCHEMA (APPROVED)
-**Status: APPROVED — Checkpoint #1 closed 2026-08-13. Phase 1 / Slice 1 build AUTHORIZED. This file is the canonical schema; all code conforms to it. Changes require a versioned amendment, never a silent edit.**
-Date: 2026-08-13 · Supersedes all SCHEMA_DRAFT_v* files (delete them from the project)
+**Status: APPROVED — now at v5 (Amendments A14–A15, 2026-08-30). Checkpoints #1 and #2 closed. Phase 1 built and verified; Phase 2 authorized and unblocked. This file is the canonical schema; all code conforms to it. Changes require a versioned amendment, never a silent edit.**
+Date: 2026-08-13, last amended 2026-08-30 (v5) · Supersedes all SCHEMA_DRAFT_v* files (delete them from the project)
+
+**CHANGELOG v4 → v5 (2026-08-30 — Amendments A14–A15, challan per-series redesign)**
+1. **A14 — challan birth is PER-SERIES.** JNPT is leaf-tracked from the printed paper book (**bare numeric**, no `J` prefix — the printer mints, the fabric indexes); Hazira is fabric-minted `H<number>`; future bases get their own letter prefix + counter. `challan_no` is now an **alphanumeric** PK, globally unique across series. CHALLAN_REGISTER gains `challan_series` + `challan_seq` (text-sorting lies: "H9999" > "H10000"). NEW register **§5.15 CHALLAN_BOOK_REGISTRY** (books + leaves, on the §5.5 pattern). **`CHALLAN_SEED` retired.**
+2. **A15 — §10 item 18 RESOLVED.** Owner withdrew the April full-history wish: test window is **≤ 2 weeks**. Seeding moves to a **go-live-morning ritual** (register the JNPT book in play + set the Hazira counter). Transcription door (Phase 2) validates per-series and stamps every backfilled row `BACKFILL_ERA`; eCount push withheld for backfill rows.
 
 **CHANGELOG FINAL → v4 (Checkpoint #2 closed 2026-08-30 — Amendments A11–A13 + Phase-1 build resolutions)**
 1. **A11 — fourth expense bucket D_DIRECT_COMPANY** for costs moving through no driver (diesel/toll on own trucks). DIESEL → D, TOLL → D; OTHER's default stays blank by design (picked at entry). Extends D16 without weakening it.
@@ -68,7 +72,7 @@ Google Sheets, one **spreadsheet file per division** plus one governance file. A
 |---|---|---|
 | **WB-GOV** Governance | USERS_ROLES, EXPENSE_CATEGORIES, AUDIT_LOG, SYNC_LEDGER, ID_COUNTERS | Admin, Directors |
 | **WB-MASTERS** Registries | CLIENTS, VEHICLES, DRIVERS, SUPPLIERS, CONTRACT_RATES | Back office; CONTRACT_RATES head-gated |
-| **WB-OPS** Division 1+2 (DO/LR/Challan + Ops/Tracking/Invoicing/Collection) | DO_REGISTER, STRIKE_LEDGER, CHALLAN_REGISTER, LR_REGISTER, LR_BOOK_REGISTRY, TRIP_EVENTS, TRIP_EXPENSES, CASH_FLOAT, DOC_POUCH, DISCREPANCY_LOG, INVOICE_TRACKER | KAM, Traffic, Masters, Supervisor, Billing, Receivables |
+| **WB-OPS** Division 1+2 (DO/LR/Challan + Ops/Tracking/Invoicing/Collection) | DO_REGISTER, STRIKE_LEDGER, CHALLAN_REGISTER, CHALLAN_BOOK_REGISTRY, LR_REGISTER, LR_BOOK_REGISTRY, TRIP_EVENTS, TRIP_EXPENSES, CASH_FLOAT, DOC_POUCH, DISCREPANCY_LOG, INVOICE_TRACKER, SUPPLIER_PAYABLE_TRACKER (+ deductions) | KAM, Traffic, Masters, Supervisor, Billing, Receivables |
 | **WB-FLEET** Division 3 (Maintenance) | GARAGE_GATE_LOG, JOB_CARDS, PARTS_ISSUE, SCRAP_TOKENS, VEHICLE_DOCS, DRIVER_SALARY_LEDGER | Maintenance Manager, Cashier |
 
 > Split rationale: blast-radius containment (a corrupted file loses one division, not the company), Sheets row-limit headroom for a decade, and per-file share control as a second fence behind role gates.
@@ -80,7 +84,9 @@ Google Sheets, one **spreadsheet file per division** plus one governance file. A
 | Entity | Format | Mint | Example |
 |---|---|---|---|
 | Internal order file (DO) | `RSJ-DO-YY-NNNN` | Fabric counter | RSJ-DO-26-0001 |
-| Challan | plain numeric, continuing series | Fabric counter | 43486 |
+| Challan (JNPT) | bare numeric from printed book | Paper book → CHALLAN_BOOK_REGISTRY | 43512 |
+| Challan (Hazira) | `H<number>`, continuing existing series | Fabric counter | H9123 |
+| Challan (future bases) | `<letter><number>` | Fabric counter per base | M0001 |
 | LR | numeric from paper book | Paper book → registry | 50925 |
 | Strike/ledger entry | `STK-YYYYMMDD-NNN` | Fabric | STK-20260812-004 |
 | Job card | `JC-YY-NNNN` | Fabric | JC-26-0031 |
@@ -128,6 +134,7 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 
 ### 3.5 ID_COUNTERS
 `counter_name · current_value · updated_ts` (script-lock protected)
+> **Challan counters are PER-SERIES (A14).** **JNPT has NO counter** — its numbers are printed on the paper book and tracked as leaves in §5.15, never minted. Hazira has a counter (`hazira_challan`), as does each future base. Counter seed values are set on **go-live morning** per A15, from owner-supplied numbers — never earlier, never invented.
 
 ---
 
@@ -189,7 +196,8 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 > Margin (client freight − awarded rate) is **never stored here**; it is computed in a HEAD_PLUS view joining CONTRACT_RATES. Executives see quotes; only heads see spread. Mirrors the Strike Board's HEAD ONLY intent, now server-enforced.
 
 ### 5.3 CHALLAN_REGISTER — *the trip*
-`challan_no (PK, numeric series) · release_ts · veh_no (FK) · driver_id (FK, own trucks) · market_driver_name · market_driver_phone (Master taps at dispatch — supplier driver capture, v3) · ownership_snapshot (OWN/MARKET) · supplier_id (nullable) · supplier_advance_amt (norm 80–90% of awarded rate) · awarded_strike_id (FK — ties trip to the winning bid: the fraud-trace join) · trip_status (RELEASED / IN_TRANSIT / AT_CLIENT / RETURNING / CLOSED / STUCK) · closed_ts · created_by`
+`challan_no (PK, alphanumeric, globally unique across series — A14) · challan_series (JNPT / HAZIRA / …) · challan_seq (numeric part, for sorting and range reports) · release_ts · veh_no (FK) · driver_id (FK, own trucks) · market_driver_name · market_driver_phone (Master taps at dispatch — supplier driver capture, v3) · ownership_snapshot (OWN/MARKET) · supplier_id (nullable) · supplier_advance_amt (norm 80–90% of awarded rate) · awarded_strike_id (FK — ties trip to the winning bid: the fraud-trace join) · trip_status (RELEASED / IN_TRANSIT / AT_CLIENT / RETURNING / CLOSED / STUCK) · closed_ts · created_by`
+> **Cancelled leaves are registry rows, never CHALLAN_REGISTER rows (A14).** A cancelled leaf never became a trip, so it must not occupy a trip row — it lives in §5.15 Leaves with its mandatory reason.
 
 ### 5.4 LR_REGISTER
 `lr_no (PK) · challan_no (FK) · rsj_do_id (FK) · container_no · consignor · consignee · from_loc · to_loc · lr_date · stuffing_date (export) · loading_date (export) · status (ACTIVE / CANCELLED / REPLACED) · replaces_lr_no (nullable) · replace_reason (ACCIDENT / REROUTE / TRANSSHIP / ERROR) · ecount_sync (PENDING / PUSHED / CONFIRMED) · created_by · ts`
@@ -236,6 +244,13 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 ### 5.14 SUPPLIER_PAYABLE_DEDUCTIONS — *itemized deductions per supplier bill* [NEW v4, Amendment A12]
 `deduction_id (PK: DED-YY-NNNNN) · payable_id (FK → §5.13) · deduction_type (SHORTAGE / DETENTION_CHARGEBACK / TDS / DAMAGE / OTHER) · amount · reason · entered_by · ts`
 > One row per deduction. A single bill routinely carries several at once (TDS + negotiated detention chargeback + occasional damage — owner's example at Checkpoint #2), so a packed column cannot hold the truth. The auto-generated payment advice itemizes from these rows.
+
+### 5.15 CHALLAN_BOOK_REGISTRY — *the JNPT printed-book index* [NEW v5, Amendment A14]
+**Books:** `book_id (PK) · series (JNPT) · leaf_from · leaf_to · printed_by · received_ts · status (ACTIVE/EXHAUSTED/VOID)`
+**Leaves:** `challan_no (PK) · book_id (FK) · leaf_status (BLANK/USED/CANCELLED) · used_ts · status_by · cancel_reason (mandatory when CANCELLED)`
+> Rules: **one ACTIVE book per series**; a leaf goes BLANK→USED exactly once (duplicate use structurally rejected); CANCELLED requires a reason and appears on an exceptions view; the dispatch screen offers the **next BLANK leaf only** — no typing.
+> The printer pre-prints strict serials on the paper book, so the fabric cannot mint what already exists on paper. This register makes the fabric the book's *index* rather than a competing numbering machine — the same logic that makes the paper LR book the LR mint (D3). Fabric and book cannot drift, because the fabric is describing the book.
+> Hazira has no paper book and therefore no rows here — it mints from a counter (§3.5).
 
 ---
 
@@ -296,6 +311,7 @@ R=read, W=write(append), A=approve, ✕=no access. Directors/Owner = full. VIEW_
 | Margin view | ✕ | R | ✕ | ✕ | ✕ | ✕ | ✕ | ✕ | ✕ |
 | CHALLAN / LR | R | W | W | R | R | ✕ | R | R | ✕ |
 | LR_BOOK_REGISTRY | ✕ | R | R | W | R | ✕ | ✕ | ✕ | ✕ |
+| CHALLAN_BOOK_REGISTRY (§5.15) | ✕ | W | W | R | R | ✕ | ✕ | ✕ | ✕ |
 | TRIP_EVENTS | R | R | W | W | R+VERIFY | ✕ | R | ✕ | ✕ |
 | TRIP_EXPENSES | ✕ | R | R | W | R | A | R | ✕ | ✕ |
 | CASH_FLOAT | ✕ | R | ✕ | R(own) | R | W+A | ✕ | ✕ | ✕ |
@@ -334,7 +350,7 @@ BORDER_FACILITATION expense rows: visible to Cashier + Directors only, per D9.
 | Receivable (Bill-by-Bill) export | PULL | vs INVOICE_TRACKER | collection truth-check |
 | **Payable (Bill-by-Bill) export** | PULL | vs SUPPLIER_PAYABLE_TRACKER | paid_date / delay_days source [NEW v2] |
 
-**Asks for eCount executive:** (1) add RSJ-DO alphanumeric custom field on Full Load — confirmed possible; (2) rename Booking Id per Rahul; (3) restrict FTL Register & any margin-bearing report to Traffic Head+ role; (4) confirm whether Trip No accepts external supply like LR does.
+**Asks for eCount executive:** (1) add RSJ-DO alphanumeric custom field on Full Load — confirmed possible; (2) rename Booking Id per Rahul; (3) restrict FTL Register & any margin-bearing report to Traffic Head+ role; (4) ~~confirm whether Trip No accepts external supply like LR does~~ **RESOLVED (A14)** — eCount confirmed **in writing** that the trip/challan field accepts externally supplied **alphanumeric** values. This is load-bearing: without it Hazira's `H<number>` series could not reach eCount at all.
 
 ---
 
@@ -356,7 +372,7 @@ BORDER_FACILITATION expense rows: visible to Cashier + Directors only, per D9.
 15. ~~Diesel/toll expense bucket~~ **RESOLVED (A11)** — fourth bucket D_DIRECT_COMPANY. OTHER stays blank by design.
 16. ~~Supplier deduction cardinality~~ **RESOLVED (A12)** — child register §5.14, several per bill.
 17. ~~Collection Head seat~~ **RESOLVED (A13)** — same human as Billing head; one login, no COLLECTION_HEAD role.
-18. **OPEN — historical backfill / challan seeding.** Owner wants FY-2026-27 (April) data transcribed in to test the system. The counter must NOT be seeded historically (it would mint numbers that collide with challans already written on paper). Recommended: seed at today's live next number for MINTING only, plus a Phase-2 transcription door that carries each historical trip's OWN paper challan number, validated unique and below the seed, every row stamped with a backfill era flag. eCount push batches for backfill rows withheld pending the CA's ruling on entering past months into statutory books. **Awaiting owner's decision — blocks Phase 2 start.**
+18. ~~Historical backfill / challan seeding~~ **RESOLVED (A15).** Owner **withdrew** the April full-history wish; test window is **≤ 2 weeks**, then rapid cutover. Two doors per series: minting (JNPT next BLANK leaf / Hazira counter) for live trips, transcription (Phase 2) for history carrying its own numbers, validated per-series and stamped `BACKFILL_ERA`. eCount push withheld for backfill rows pending the CA. Seeding happens **go-live morning** — see A15's ritual. **Phase 2 is unblocked.**
 14. ⚠ **Owner-bottleneck note (D18):** every garage approval routes through one phone. Accepted for now at owner's insistence; revisit at >120 trucks or when approval latency starts parking trucks.
 
 ---
@@ -365,7 +381,7 @@ BORDER_FACILITATION expense rows: visible to Cashier + Directors only, per D9.
 
 | Slice | Closes leaks | Registers built | Gate to next slice |
 |---|---|---|---|
-| **1 — Money spent, not recovered** | detention untracked; receipts never reach invoice; late invoicing; fake transit bills | WB-GOV all · WB-MASTERS all · DO_REGISTER · CHALLAN_REGISTER · LR_REGISTER · LR_BOOK_REGISTRY · TRIP_EVENTS · TRIP_EXPENSES · EXPENSE_INTIMATIONS · CASH_FLOAT · DOC_POUCH · INVOICE_TRACKER | Part-1 walkthrough passed; pilot corridor running 2 weeks |
+| **1 — Money spent, not recovered** | detention untracked; receipts never reach invoice; late invoicing; fake transit bills | WB-GOV all · WB-MASTERS all · DO_REGISTER · CHALLAN_REGISTER · CHALLAN_BOOK_REGISTRY · LR_REGISTER · LR_BOOK_REGISTRY · TRIP_EVENTS · TRIP_EXPENSES · EXPENSE_INTIMATIONS · CASH_FLOAT · DOC_POUCH · INVOICE_TRACKER | Part-1 walkthrough passed; pilot corridor running 2 weeks |
 | **2 — Supplier overpayment** | no quote visibility; late-payment rate retaliation | STRIKE_LEDGER · SUPPLIER_PAYABLE_TRACKER · SUPPLIER_PAYABLE_DEDUCTIONS · CONTRACT_RATES views | Part-2 walkthrough (ops half) passed |
 | **3 — Fleet leaks** | repeat garage expenses; RTO doc lapses; driver advance leverage | GARAGE_GATE_LOG · JOB_CARDS · PARTS_ISSUE · SCRAP_TOKENS · VEHICLE_DOCS · DRIVER_SALARY_LEDGER | Part-2 walkthrough (fleet half) passed |
 | **4 — Time & blindness** | unit-economics blind spot; idle/backhaul waste | none — computed views (UNIT_ECONOMICS, time-death report, empty-vehicle × open-DO match list) over slices 1–3 | Slices 1–3 producing data |
