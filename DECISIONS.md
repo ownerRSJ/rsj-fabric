@@ -157,3 +157,35 @@ Ruled by the owner at Checkpoint #2. One supplier bill routinely carries several
 
 ## AMENDMENT A13 (2026-08-30) — Collection Head = Billing (Sales) head; role list finalized at A9's 16
 Ruled at Checkpoint #2: the Collection Head and the Billing head are the **same human**, so per A1's own conditional ("Collection Head IF same human as Billing head — else +1 account") there is **one seat, one login**. No COLLECTION_HEAD role or account exists. The fabric's role list is exactly A9's 16 accounts; SCHEMA.md §3.1's older 14-role eCount mirror (VIEW_ONLY, COLLECTION_HEAD, TRAFFIC_MANAGER as fabric roles) is historical and superseded — TMs hold no accounts per A2, and read-only access is a Phase-2 permission concern, not a seat.
+
+---
+
+## AMENDMENT A14 (2026-08-30) — Challan birth is PER-SERIES; alphanumeric key (supersedes D6's single-counter model; D6's principle — WHO mints and WHEN it's logged — stands)
+
+**New facts that forced this:** (1) The printed paper challan book CONTINUES after go-live at JNPT — the printer pre-prints strict serial numbers on the book; the fabric cannot mint what the printer already printed. (2) Hazira has NO paper book — its series has been maintained digitally since day 1, currently in the 9000s, and must carry an `H` marker. (3) The owner's April register shows leaves 42938/42939 pulled forward to record 31-March trips and struck through — proof that a free-running counter cannot represent real book behaviour; a leaf registry can. (4) eCount confirmed in writing that the trip/challan number field accepts externally supplied ALPHANUMERIC values (confirmation ref: ____________, date: ________ — FILL IN; this is load-bearing for Phase 4).
+
+**Ruling:**
+- **JNPT (paper book series, bare numeric):** the printed book is the mint, exactly as the paper LR book is for LR numbers (D3 logic). The fabric runs a **CHALLAN_BOOK_REGISTRY** (books + leaves, mirroring §5.5's two-sheet structure): each book registered with its printed range; each leaf goes BLANK → USED exactly once, or BLANK → CANCELLED with a mandatory reason. The dispatch screen offers the next BLANK leaf of the active book; the exec writes that number on the paper. Fabric and book cannot drift because the fabric is the book's index.
+- **JNPT keeps BARE numbers — no `J` prefix.** The paper prints bare numbers and eCount history is bare numeric; a prefix would create two names for one document — the dual-numbering disease D3 exists to kill. Rule: **no prefix = JNPT legacy series; letter prefix = that location's own series.** Collision impossible by construction.
+- **Hazira (no paper book):** the fabric genuinely mints — a dedicated counter in ID_COUNTERS, continuing the existing series, format `H<number>` (e.g. H9123). This is what D6 originally imagined, now scoped to Hazira only.
+- **Future bases (Baroda/Mundra/…):** each gets its own letter prefix + own fabric counter, on the Hazira pattern. No new paper books will be commissioned.
+- **Key mechanics:** `challan_no` stays the PRIMARY KEY, now alphanumeric, globally unique across series. CHALLAN_REGISTER gains two derived columns: `challan_series` (JNPT / HAZIRA / …) and `challan_seq` (numeric part) — because text-sorting lies ("H9999" > "H10000" as text) and every range/ageing report needs the clean number.
+- **Cancelled leaves live in the registry, not in CHALLAN_REGISTER.** A cancelled leaf never became a trip; it must not occupy a trip row. (The 42938/42939 case becomes: two leaf rows CANCELLED with reason "used out of sequence for prior-period trips", plus two USED leaves for the actual trips.)
+- **`CHALLAN_SEED` (single script property) is RETIRED.** Replaced by the go-live-morning ritual in A15.
+
+**Why it must not be reversed:** reverting to a single counter re-creates the drift between fabric and paper that the owner's own register photographs prove; reverting the bare-JNPT rule creates dual numbering; reverting the alphanumeric key strands Hazira outside the system.
+
+---
+
+## AMENDMENT A15 (2026-08-30) — Backfill & seeding resolved (closes SCHEMA §10 item 18); OWNER REPLACED his April-backfill wish
+
+**Owner's ruling (signed off via Rahul, 2026-08-30):** the FY-April full-history transcription wish is WITHDRAWN. Test window is **strictly ≤ 2 weeks of history**, followed by rapid cutover to live operations once core verification passes. No multi-month parallel run.
+
+**Ruling:**
+- **Two doors, per series.** The MINTING door issues new numbers for live trips only (JNPT: next BLANK leaf from the registry; Hazira: the counter). The TRANSCRIPTION door (Phase 2 build) accepts historical trips carrying the challan numbers they already own — copied, never minted.
+- **Transcription validation is per-series:** JNPT backfill numbers must fall inside a registered book's printed range and be unused; Hazira backfill numbers must be below the counter seed and match the `H` format. Duplicates rejected structurally.
+- **Every backfilled row carries an era flag** (`BACKFILL_ERA`, same mechanic as D10's `PRE_AUTH_ERA`). Anti-fraud ledgers must never let a September-entered April trip masquerade as a live-supervised one. Baselines and reports count controlled data only.
+- **eCount push for backfilled rows stays WITHHELD** pending the CA's ruling on entering past periods into statutory books (likely moot at a 2-week window, but the gate stays).
+- **Seeding happens on GO-LIVE MORNING, not before.** At ~100 challans consumed per 2–3 days, any number captured earlier is stale by lunch. The ritual (replaces DEPLOY.md step 6): (1) register the JNPT book currently in play — its printed range and the next blank leaf as of that morning; (2) set the Hazira counter to that morning's next number. Both entered as Script Properties / registry rows by the owner-supplied values, never invented.
+
+**Why it must not be reversed:** seeding early or seeding historically mints numbers that collide with paper already written — the duplicate error comes from inside the house.
