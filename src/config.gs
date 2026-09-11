@@ -43,13 +43,34 @@ var CONFIG = {
   // An open intimation expires this many hours after the trip closes.
   INTIMATION_EXPIRY_HOURS: 48,
 
-  /* ---- Traffic Manager roster (Amendment A2) ---------------------------- */
+  /* ---- Sourcing origins for STRIKE_LEDGER.sourced_by_tm (A2 / A19 / A23) - */
 
-  // Traffic Managers hold NO logins. Their sourcing attribution survives via
-  // STRIKE_LEDGER.sourced_by_tm, which is an MCQ fed from this static list.
-  // OWNER MUST SUPPLY THESE NAMES before the Strike Ledger is used in anger.
-  // Left empty deliberately: bootstrap will not invent people's names.
-  TRAFFIC_MANAGERS: [],
+  // Two kinds of entry, deliberately (A23):
+  //
+  //   TOKEN - a sourcing origin that HOLDS A LOGIN: OWNER, TRAFFIC_HEAD.
+  //           A token resolves through the USERS_ROLES custody log to whoever
+  //           held that seat on the row's date. Writing "R.B. Singh" here
+  //           instead would fork attribution away from the custody log, and
+  //           the day he hands over traffichead@ every old row would point at
+  //           a name with no seat behind it.
+  //   NAME  - a sourcing origin with NO login. He has no custody row, so his
+  //           name is his only identity in the data.
+  //
+  // Retire, never delete: set active:false and the entry leaves the dropdown
+  // but stays valid on the historical rows that reference it. Deleting would
+  // orphan old awards, and the ledger's evidence value depends on them still
+  // resolving.
+  //
+  // Adding a TM is a config change - one line here, clasp push, bootstrap.
+  // Never a hand edit to the _LISTS sheet (CLAUDE.md rule 1).
+  TRAFFIC_MANAGERS: [
+    { value: 'OWNER',         active: true },  // token - Ranjit Jha, via owner@
+    { value: 'TRAFFIC_HEAD',  active: true },  // token - R.B. Singh, via traffichead@
+    { value: 'Rakesh Mishra', active: true },
+    { value: 'Jitu',          active: true },  // single name - full name wanted (A23)
+    { value: 'Rai',           active: true },  // single name - full name wanted (A23)
+    { value: 'Sagar',         active: true }   // single name - full name wanted (A23)
+  ],
 
   /* ---- Challan seeding, per series (A14 / A15) -------------------------- */
 
@@ -105,4 +126,24 @@ var CONFIG = {
  */
 function currentYY_() {
   return Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yy');
+}
+
+/**
+ * Sourcing origins OFFERED in the dropdown - active entries only (A23).
+ */
+function activeSourcingOrigins_() {
+  return CONFIG.TRAFFIC_MANAGERS
+    .filter(function (t) { return t.active; })
+    .map(function (t) { return t.value; });
+}
+
+/**
+ * Sourcing origins ACCEPTED on read - active AND retired (A23).
+ *
+ * The asymmetry is the whole point: a retired TM leaves the dropdown so no new
+ * award can be attributed to him, but every historical STRIKE_LEDGER row that
+ * names him must still resolve. Phase 2's read validation uses this list.
+ */
+function allSourcingOrigins_() {
+  return CONFIG.TRAFFIC_MANAGERS.map(function (t) { return t.value; });
 }

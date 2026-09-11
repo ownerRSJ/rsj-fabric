@@ -279,9 +279,14 @@ function verifySeeds_(props, report) {
   }
 
   // ---- Outstanding real-world facts -------------------------------------
-  if (!CONFIG.TRAFFIC_MANAGERS.length) {
+  var activeOrigins = activeSourcingOrigins_();
+  if (!activeOrigins.length) {
     report.push(['CONFIG', 'TRAFFIC_MANAGERS', 'WARN',
-      'empty - owner must supply the TM names for STRIKE_LEDGER.sourced_by_tm (A2)']);
+      'no active sourcing origins - STRIKE_LEDGER.sourced_by_tm has nothing to offer (A2/A23)']);
+  } else {
+    report.push(['CONFIG', 'TRAFFIC_MANAGERS', 'PASS',
+      activeOrigins.length + ' active sourcing origins (' + activeOrigins.join(', ') + ') · ' +
+      (allSourcingOrigins_().length - activeOrigins.length) + ' retired but still valid on historical rows']);
   }
 
   // ---- JNPT challan book (A14/A15) --------------------------------------

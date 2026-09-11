@@ -355,3 +355,21 @@ Sharing a password without a custody row is never a fourth option.
 **Gate tests G44 (reject) and G45 (allow).** G45 is the negative control: without it, an over-tight implementation that blocks DISPUTED would pass the suite and break collections on day one.
 
 **Why it must not be reversed:** A13's one-seat ruling is only safe while the seat cannot move money on its own. Remove the director row and A13 becomes the single unguarded path from "client owes us" to "client doesn't", authored end to end by one login.
+
+---
+
+## AMENDMENT A23 (2026-09-13) — Traffic Manager list supplied; login-holders enter as tokens, non-login sourcers as names (completes A2)
+
+**Supplied by Rahul, 2026-09-13:** the people who source market vehicles are Ranjit Jha (owner), R.B. Singh (traffic head), Rakesh Mishra, Jitu, Rai and Sagar, with more to come as the company grows.
+
+**Ruling — two kinds of entry, deliberately.**
+- **A sourcing origin that holds a login is a TOKEN, not a name:** `OWNER` (already introduced by A19) and `TRAFFIC_HEAD`. A token resolves through the USERS_ROLES custody log to whichever human held that seat on the row's date. Writing "Ranjit Jha" or "R.B. Singh" as a list value would create a second, unlinked name for a person the custody log already names — and the day RB Singh hands over `traffichead@`, every old row would point at a name with no seat behind it. One origin, one identifier.
+- **A sourcing origin with no login is a NAME:** Rakesh Mishra, Jitu, Rai, Sagar. They have no custody row, so the name is their only identity in the data. This is exactly A2's `sourced_by_tm` as designed.
+- **Names are retired, never deleted.** The list carries an `active` flag; a departed TM's name leaves the dropdown but stays valid on the rows that reference him. Removing it would orphan historical awards — the ledger's evidence value depends on those rows still resolving.
+- **Adding a TM is a config change** — one line in `config.gs`, `clasp push`, `bootstrap`. It is not a hand edit to a LISTS sheet (CLAUDE.md rule 1), and it is not an amendment: the rule is settled here; the roster is data.
+
+**Interaction with A19:** an award RB Singh strikes from his *own* network carries `TRAFFIC_HEAD`; one he transcribes on the owner's dictation carries `OWNER` and is born UNCONFIRMED. The monthly report (A16.2, extended by A19) can now compare all six origins.
+
+**Open, minor:** Jitu, Rai and Sagar are single names. Supply full names when known — the list enforces uniqueness, and a single name breaks the day a second Sagar joins.
+
+**Why it must not be reversed:** mixing a login-holder's name into a name list is the dual-naming disease D3 and A14 were written to kill, applied to people instead of documents.

@@ -241,12 +241,11 @@ var LISTS = {
     // chargeback + damage), so deductions are a child register, one row each.
     DEDUCTION_TYPE: ['SHORTAGE', 'DETENTION_CHARGEBACK', 'TDS', 'DAMAGE', 'OTHER'],
 
-    // A2 - sourcing attribution without TM logins. A19 adds OWNER: the owner
-    // dictates his own network's awards to the Head rather than typing them,
-    // and marking them OWNER is what makes them separable in the monthly
-    // report AND what triggers the OWNER_CONFIRM requirement before payment.
-    // TM names come from CONFIG.TRAFFIC_MANAGERS, still awaiting the owner.
-    SOURCED_BY_TM: ['OWNER'].concat(CONFIG.TRAFFIC_MANAGERS)
+    // A2 / A19 / A23 - sourcing attribution without TM logins. The dropdown
+    // offers ACTIVE entries only; a retired name stays valid on the historical
+    // rows that reference it (see allSourcingOrigins_ in config.gs). OWNER,
+    // introduced by A19, is a token in that same list and appears exactly once.
+    SOURCED_BY_TM: activeSourcingOrigins_()
   },
 
   /* ===================== WB-FLEET ======================================= */
