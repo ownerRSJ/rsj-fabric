@@ -123,6 +123,19 @@ In the Apps Script editor: **Project Settings** (the gear on the left) →
 Enter the plain number — the `H` is added by the system. It lives here, not in
 the code, so the number never lands in the repo.
 
+### 6c. Set the go-live date
+
+In the same **Script Properties** screen:
+
+| Property | Value |
+|---|---|
+| `GO_LIVE_DATE` | that morning's date, as `YYYY-MM-DD`, e.g. `2026-10-01` |
+
+This is what enforces the two-week testing window. The transcription door
+refuses any historical trip dated more than 14 days before it — so the limit is
+checked by the code rather than remembered by a person. **Never set it early**, or
+the window silently starts from the wrong day.
+
 Then run `bootstrap` once more to write the counter.
 
 **Both are owner-supplied and never invented.** Seeding early, or from history,

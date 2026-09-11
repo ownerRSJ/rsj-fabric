@@ -417,7 +417,7 @@ var FABRIC_SCHEMA = {
       ] },
 
     { name: 'INVOICE_TRACKER', ref: 'SCHEMA.md §5.11', appendOnly: false,
-      note: 'Ops mirror only - eCount stays the system of record for the invoice itself. per_lr_readiness is computed from DOC_POUCH and names the blocking document and its holder.',
+      note: 'Ops mirror only - eCount stays the system of record for the invoice itself. per_lr_readiness is computed from DOC_POUCH and names the blocking document and its holder. A22: WRITTEN_OFF, and any reduction of invoice_amount after submitted_ts, need an approval row from rahul@ or rohit@ - not owner@, not billing.sales@ itself. DISPUTED and PART_PAID are deliberately ungated so honest same-day recording is never blocked.',
       columns: [
         { h: 'inv_track_id' },
         { h: 'ecount_invoice_no' },
@@ -433,7 +433,15 @@ var FABRIC_SCHEMA = {
         { h: 'collection_status', t: 'LIST:COLLECTION_STATUS' },
         { h: 'last_followup_ts',  t: 'TS' },
         { h: 'followup_by' },
-        { h: 'closed_ts', t: 'TS' }
+        { h: 'closed_ts', t: 'TS' },
+        // A22: the only act billing.sales@ could perform alone to lose money is
+        // quietly reducing or writing off what a client owes. These three, plus
+        // an INVOICE_WRITEOFF_APPROVE row in the chained AUDIT_LOG, are the
+        // second hand - this register is mutable, so the chained row is the
+        // evidence that survives.
+        { h: 'writeoff_approved_by' },
+        { h: 'writeoff_approved_ts', t: 'TS' },
+        { h: 'writeoff_reason' }
       ] },
 
     { name: 'EXPENSE_INTIMATIONS', ref: 'SCHEMA.md §5.12', appendOnly: true,

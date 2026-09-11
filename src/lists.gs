@@ -110,8 +110,11 @@ var LISTS = {
 
     RATE_SOURCE: ['CONTRACT', 'SPOT_CONFIRMED'],
 
-    // STRIKE_LEDGER.event_type - CORRECTION never edits, it points at the bad row
-    STRIKE_EVENT_TYPE: ['QUOTE', 'REQUOTE', 'AWARD', 'CANCEL', 'CORRECTION'],
+    // STRIKE_LEDGER.event_type - CORRECTION never edits, it points at the bad
+    // row. OWNER_CONFIRM (A19) is the owner's one-tap second hand on awards he
+    // dictated but did not type: it references the award via refers_strike_id
+    // and gates PAYMENT, never dispatch.
+    STRIKE_EVENT_TYPE: ['QUOTE', 'REQUOTE', 'AWARD', 'CANCEL', 'CORRECTION', 'OWNER_CONFIRM'],
 
     QUOTED_VIA: ['CALL', 'WHATSAPP', 'IN_PERSON'],
 
@@ -226,7 +229,10 @@ var LISTS = {
 
     ANNEXURE_STATUS: ['INCOMPLETE', 'COMPLETE'],
 
-    COLLECTION_STATUS: ['PENDING', 'PART_PAID', 'PAID', 'OVERDUE', 'DISPUTED'],
+    // A22: WRITTEN_OFF requires a director's approval row. DISPUTED and
+    // PART_PAID stay ungated on purpose - a dispute must be recordable the
+    // hour it happens or the receivables ageing lies.
+    COLLECTION_STATUS: ['PENDING', 'PART_PAID', 'PAID', 'OVERDUE', 'DISPUTED', 'WRITTEN_OFF'],
 
     INTIMATION_STATUS: ['OPEN', 'MATCHED', 'EXPIRED', 'CANCELLED'],
 
@@ -235,9 +241,12 @@ var LISTS = {
     // chargeback + damage), so deductions are a child register, one row each.
     DEDUCTION_TYPE: ['SHORTAGE', 'DETENTION_CHARGEBACK', 'TDS', 'DAMAGE', 'OTHER'],
 
-    // Amendment A2 - filled from CONFIG.TRAFFIC_MANAGERS, which the owner supplies.
-    // Stays empty (and the dropdown is skipped) until he does.
-    SOURCED_BY_TM: CONFIG.TRAFFIC_MANAGERS
+    // A2 - sourcing attribution without TM logins. A19 adds OWNER: the owner
+    // dictates his own network's awards to the Head rather than typing them,
+    // and marking them OWNER is what makes them separable in the monthly
+    // report AND what triggers the OWNER_CONFIRM requirement before payment.
+    // TM names come from CONFIG.TRAFFIC_MANAGERS, still awaiting the owner.
+    SOURCED_BY_TM: ['OWNER'].concat(CONFIG.TRAFFIC_MANAGERS)
   },
 
   /* ===================== WB-FLEET ======================================= */

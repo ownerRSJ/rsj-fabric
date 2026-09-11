@@ -9,8 +9,8 @@ You are building an internal anti-fraud operations system for RSJ Carriers Pvt. 
 
 ## NON-NEGOTIABLE RULES (violating any of these defeats the system's purpose)
 1. **No user ever gets direct edit access to any register sheet.** All reads/writes go through the Apps Script service layer. If you find yourself telling the user to "just edit the sheet," you are breaking the anti-fraud control.
-2. **Append-only tables are never updated or deleted:** STRIKE_LEDGER, AUDIT_LOG, TRIP_EVENTS, DISCREPANCY_LOG, GARAGE_GATE_LOG, SCRAP_TOKENS, DRIVER_SALARY_LEDGER, DRIVER_RECOVERY_LEDGER, EXPENSE_INTIMATIONS, DRIVER_ADVANCE_RATE_CARD. Corrections = new rows referencing the erroneous row.
-3. **AUDIT_LOG is hash-chained:** every service-layer write appends a row carrying prev_row_hash + row_hash.
+2. **Append-only tables are never updated or deleted** (eleven): USERS_ROLES, STRIKE_LEDGER, AUDIT_LOG, TRIP_EVENTS, DISCREPANCY_LOG, GARAGE_GATE_LOG, SCRAP_TOKENS, DRIVER_SALARY_LEDGER, DRIVER_RECOVERY_LEDGER, EXPENSE_INTIMATIONS, DRIVER_ADVANCE_RATE_CARD. Corrections = new rows referencing the erroneous row. (USERS_ROLES added per A21 — A8 made it a custody log and this list omitted it.)
+3. **AUDIT_LOG is hash-chained:** every service-layer write appends a row carrying prev_row_hash + row_hash, and a nightly REGISTER_SNAPSHOT row per append-only register (A21).
 4. **Margin is server-gated:** supplier rates/margin computations are visible ONLY to TRAFFIC_HEAD and OWNER roles. KAM never receives price fields in any payload (D19). Never move this filtering to the client/HTML side.
 5. **Every ID comes from ID_COUNTERS inside LockService.** Never generate IDs client-side or with Math.random.
 6. **Identity = Session.getActiveUser().getEmail()** checked against USERS_ROLES on every server function entry. No role row or inactive → reject.

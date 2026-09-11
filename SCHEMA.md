@@ -4,6 +4,11 @@ Date: 2026-08-13, last amended 2026-09-12 (v6) · Supersedes all SCHEMA_DRAFT_v*
 
 **CHANGELOG v5 → v6 (2026-09-11/12 — Amendments A17–A22)**
 1. **A17 — cash handover is digital-first.** §5.8's voucher-at-handover rule is replaced by an **ordering rule**: the fabric mints `float_id` before the cash leaves the office, every day, in both handover modes. Five new columns: `handover_mode` · `handover_ts` (must be ≥ `issue_ts`) · `driver_ack_method` · `driver_ack_ts` · `absent_seat`. Paper is demoted to an acknowledgment of receipt; no numbered voucher book is ever created.
+3. **A19 — owner-dictated awards get a second hand.** §5.2 `event_type` gains **OWNER_CONFIRM**; `sourced_by_tm` gains the value **OWNER**. The Head enters the award (born UNCONFIRMED, dispatch proceeds); the owner's one-tap OWNER_CONFIRM row gates **payment**, not dispatch.
+4. **A20 — the intimation right belongs to eight named seats.** §5.12's delegation slot is removed; EXPENSE_INTIMATIONS is writable by owner@, rahul@, rohit@, traffichead@, both Masters, tracker@ and maintenance@ — and refused to everyone else, cashier@ included (he approves the spend, so he must not be the intimator).
+5. **A21 — register re-hash and a code-enforced backfill window.** §3.3 `action` gains **REGISTER_SNAPSHOT** and **REGISTER_TAMPER**; a nightly trigger hashes the eleven append-only registers into the chain, so hiding a hand edit means breaking it. §3.5 gains the **`GO_LIVE_DATE`** script property, set on go-live morning, against which the ≤14-day transcription window is enforced.
+6. **A22 — invoice write-off needs a director.** §5.11 gains `writeoff_approved_by` · `writeoff_approved_ts` · `writeoff_reason`; §3.3 `action` gains **INVOICE_WRITEOFF_APPROVE**. DISPUTED and PART_PAID are deliberately NOT gated — a dispute must be recordable the hour it happens or the ageing lies.
+
 2. **A18 — the challan is an office document, the LR is a field document.** The printed JNPT book sits in the Sanpada office, so traffichead@ taps the challan leaf every day (not as cover); Masters read the challan registry and never write it. Masters tap their own LR leaf and write the LR row in one action. The two documents meet **by selection, never by typing** — the LR screen offers only RELEASED challans. §8 matrix corrected: CHALLAN/LR split into two rows, and the Traffic Head gains W on LR_REGISTER and LR book leaves for cover days. Standing principle named: **every number that appears on paper was minted or indexed in the fabric first.**
 
 **CHANGELOG v4 → v5 (2026-08-30 — Amendments A14–A15, challan per-series redesign)**
@@ -132,6 +137,7 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 ### 3.3 AUDIT_LOG *(append-only)*
 `log_id · ts · user_email · action · target_table · target_id · payload_summary · prev_row_hash · row_hash`
 > Hash-chained: each row stores the previous row's hash. Any retro-edit breaks the chain visibly. This is the "bank ledger" mechanic, applied globally.
+> **`action` values added in v6:** **REGISTER_SNAPSHOT** and **REGISTER_TAMPER** (A21 — the nightly re-hash of the eleven append-only registers writes its hash *into* the chain, so concealing a hand edit means editing the register, the snapshot, and every hash after it), and **INVOICE_WRITEOFF_APPROVE** (A22 — INVOICE_TRACKER is mutable and gets only a row-count check, so the chained row is the evidence that survives).
 
 ### 3.4 SYNC_LEDGER
 `batch_id · direction (PUSH/PULL) · ecount_template · file_ref · row_count · status (GENERATED/UPLOADED/CONFIRMED/FAILED) · checksum · ts · user`
@@ -139,6 +145,7 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 ### 3.5 ID_COUNTERS
 `counter_name · current_value · updated_ts` (script-lock protected)
 > **Challan counters are PER-SERIES (A14).** **JNPT has NO counter** — its numbers are printed on the paper book and tracked as leaves in §5.15, never minted. Hazira has a counter (`hazira_challan`), as does each future base. Counter seed values are set on **go-live morning** per A15, from owner-supplied numbers — never earlier, never invented.
+> **`GO_LIVE_DATE` script property (A21).** Set on go-live morning as the third item of the ritual, alongside the JNPT book registration and the Hazira counter. The transcription door refuses any trip dated more than 14 days before it — the ≤2-week window is enforced in code, not promised. Never set early.
 
 ---
 
@@ -187,14 +194,14 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 |---|---|
 | strike_id (PK) | |
 | rsj_do_id (FK) | |
-| event_type | QUOTE / REQUOTE / AWARD / CANCEL / CORRECTION |
+| event_type | QUOTE / REQUOTE / AWARD / CANCEL / CORRECTION / **OWNER_CONFIRM** (A19) |
 | supplier_id (FK) | or OWN_FLEET |
 | veh_no (nullable) | offered vehicle |
 | quoted_rate | supplier side — visible to traffic team |
 | quoted_via | CALL / WHATSAPP / IN_PERSON |
 | award_reason | **mandatory free text on AWARD** |
 | refers_strike_id | CORRECTION points at the erroneous row; original never edited |
-| sourced_by_tm | MCQ static TM list — attribution without TM logins (Amendment A2) |
+| sourced_by_tm | MCQ static TM list, **plus the value OWNER** (A19) — attribution without TM logins (A2). An owner-sourced award is dictated to the Head and born UNCONFIRMED; the owner's OWNER_CONFIRM row (referencing it via `refers_strike_id`) gates supplier **payment**, never dispatch. |
 | entered_by · ts · prev_row_hash · row_hash | |
 > **D17:** post-award QUOTE rows are accepted and stored; the monthly HEAD report computes awarded-vs-best-later-quote spread per order and per sourcing person (`entered_by` + SUPPLIERS_MASTER.network_owner make owner-vs-TM sourcing comparable).
 > Margin (client freight − awarded rate) is **never stored here**; it is computed in a HEAD_PLUS view joining CONTRACT_RATES. Executives see quotes; only heads see spread. Mirrors the Strike Board's HEAD ONLY intent, now server-enforced.
@@ -253,11 +260,13 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 `disc_id · challan_no · lr_no (nullable) · type (DETENTION_DISPUTE / DAMAGE / EMPTY_REFUSED / SHORTAGE / ACCIDENT / ROUTE_CHANGE / OTHER) · mcq_detail · note · raised_by · ts · resolution_status (OPEN / UNDER_REVIEW / RESOLVED / WRITTEN_OFF) · resolution_note · resolved_by · resolved_ts`
 
 ### 5.11 INVOICE_TRACKER — *ops mirror; eCount is SoR for the invoice itself*
-`inv_track_id (PK) · ecount_invoice_no · client_id · lot_id · lr_list (2–10 containers per lot) · per_lr_readiness (computed from DOC_POUCH: '9 of 10 ready — blocked by LR 50931 parking receipt, holder named') · invoice_amount · invoice_date · annexure_status (INCOMPLETE / COMPLETE) · submitted_ts · due_date · collection_status (PENDING / PART_PAID / PAID / OVERDUE / DISPUTED) · last_followup_ts · followup_by · closed_ts`
+`inv_track_id (PK) · ecount_invoice_no · client_id · lot_id · lr_list (2–10 containers per lot) · per_lr_readiness (computed from DOC_POUCH: '9 of 10 ready — blocked by LR 50931 parking receipt, holder named') · invoice_amount · invoice_date · annexure_status (INCOMPLETE / COMPLETE) · submitted_ts · due_date · collection_status (PENDING / PART_PAID / PAID / OVERDUE / DISPUTED / WRITTEN_OFF) · last_followup_ts · followup_by · closed_ts · writeoff_approved_by · writeoff_approved_ts · writeoff_reason (mandatory — A22)`
+> **A22 — write-off needs a director.** `collection_status = WRITTEN_OFF`, and any reduction of `invoice_amount` after `submitted_ts` is set, require an approval row from **rahul@ or rohit@** — not owner@ (his one-tap queue is already the garage and now owner-sourced awards; receivables is the one queue he is not in), and obviously not billing.sales@ itself. The approval is durable in two places: these three columns **and** an `INVOICE_WRITEOFF_APPROVE` row in the hash-chained AUDIT_LOG, because this register is mutable and gets only a row-count check under A21.
+> **DISPUTED and PART_PAID are deliberately NOT gated.** A dispute is a fact about the client's behaviour, not a reduction of what is owed, and it must be recordable the hour it happens or the receivables ageing lies. Requiring a director's tap would push disputes into somebody's memory — the disease this system exists to cure.
 
 ### 5.12 EXPENSE_INTIMATIONS — *the anti-fake-bill control (append-only)* [NEW in v2]
 `intimation_id (PK: INT-YY-NNNNN) · challan_no (FK) · veh_no · cat_code (FK) · est_amount · location_hint (MCQ: city list + free text) · intimated_by (Master/Traffic, from driver call) · ts · status (OPEN / MATCHED / EXPIRED / CANCELLED) · matched_exp_id (nullable FK) · expiry_ts (trip close + 48h — D20a)`
-> Flow (v3): breakdown calls land on the **owner** today — so owner (or delegated person; delegation slot built in) taps the 15-second intent entry ("tyre puncture, ~₹800, Vapi") → intimation is born, timestamped, under the intimator's login. The later bill must MATCH an OPEN intimation (same challan, same category, amount within tolerance) or the expense auto-flags. A fake bill now requires a pre-logged fake intimation — casual fraud becomes premeditated conspiracy with evidence attached.
+> Flow (**A20 replaces v3's delegation slot**): there is no fixed person for a breakdown call — the driver rings everyone, starting with the owner, and talks to whoever picks up. So the right belongs to **eight named seats** — owner@, rahul@, rohit@, traffichead@, master.jnpt@, master.hazira@, tracker@, maintenance@ — and whoever took the call taps the 15-second intent entry ("tyre puncture, ~₹800, Vapi") under their own login. There is nothing to delegate, because the right is already distributed. Every other seat is refused; **cashier@ is deliberately excluded — he approves the bucket-C spend, so he must not also be the intimator.** The phone rota is the owner's paper problem, never a register. The later bill must MATCH an OPEN intimation (same challan, same category, amount within tolerance) or the expense auto-flags. A fake bill now requires a pre-logged fake intimation — casual fraud becomes premeditated conspiracy with evidence attached.
 
 ### 5.13 SUPPLIER_PAYABLE_TRACKER — *late-payment → rate-retaliation visibility* [NEW in v2]
 `payable_id (PK) · supplier_id (FK) · challan_no (FK) · ecount_bill_ref · bill_amount · bill_date · pod_received_ts (LR-return reaches office — from DOC_POUCH) · due_date (pod_received_ts + N; company default N=30, per-supplier override — D20c) · paid_date (from eCount Payable Bill-by-Bill pull) · paid_amount · delay_days (computed) · payment_advice_ref (auto-generated per payment — the breakup sheet suppliers demand; itemizes from §5.14) · dispute_flag · notes`
@@ -342,7 +351,7 @@ R=read, W=write(append), A=approve, ✕=no access. Directors/Owner = full. VIEW_
 | DOC_POUCH | R | R | R | W | R+VERIFY | ✕ | R | ✕ | ✕ |
 | DISCREPANCY_LOG | R | R | W | W | W | ✕ | R | R | ✕ |
 | INVOICE_TRACKER | R | ✕ | ✕ | ✕ | R | ✕ | W | W | ✕ |
-| EXPENSE_INTIMATIONS | ✕ | R | W | W | R | R | ✕ | ✕ | ✕ |
+| EXPENSE_INTIMATIONS (A20) | ✕ | W | — | W | ✕ | ✕ | ✕ | ✕ | W |
 | SUPPLIER_PAYABLE | ✕ | R | ✕ | ✕ | ✕ | W | ✕ | ✕ | ✕ |
 | SUPPLIER_PAYABLE_DEDUCTIONS (§5.14) | ✕ | R | ✕ | ✕ | ✕ | W | ✕ | ✕ | ✕ |
 | Payment-delay×quote view | ✕ | R | ✕ | ✕ | ✕ | ✕ | ✕ | ✕ | ✕ |
@@ -352,6 +361,7 @@ R=read, W=write(append), A=approve, ✕=no access. Directors/Owner = full. VIEW_
 
 *Billing reads CONTRACT_RATES only to raise invoices at contract freight — it sees client freight, never supplier cost, so it cannot compute margin. KAM sees client freight for its own clients (client servicing) but no supplier side — same one-sided principle.
 BORDER_FACILITATION expense rows: visible to Cashier + Directors only, per D9.
+EXPENSE_INTIMATIONS (A20) is written by eight seats; `tracker@` is one of them but has no column in this matrix — the authoritative list is owner@, rahul@, rohit@, traffichead@, master.jnpt@, master.hazira@, tracker@, maintenance@. Traffic Managers hold no logins (A2), hence "—".
 
 ### 8.1 Roles added in Amendment A8
 - **BILLING_PURCHASE** — market-supplier bill verification. Access: SUPPLIER_PAYABLE (W), STRIKE_LEDGER awarded-rate field (R, own-verification only), CHALLAN/LR (R). **No access to CONTRACT_RATES or client freight.** Mirror-image of BILLING (renamed BILLING_SALES), which sees client freight and never supplier cost. Neither can compute margin alone; together at one desk they can — organizational awareness item, not a system flaw.

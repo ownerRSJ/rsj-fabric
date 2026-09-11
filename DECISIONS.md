@@ -284,3 +284,74 @@ Sharing a password without a custody row is never a fourth option.
 **Why it must not be reversed:** putting the challan tap at the port would require either moving the paper book to the port (two hands in one book — the drift A14 exists to prevent) or phoning the number from the office to the port to be written by hand — a relay of a minted number, which is the re-keying disease in its purest form. Keeping the tap where the book physically is costs nothing and closes both.
 
 **Standing principle this amendment makes explicit (already true of A14, D3 and A17, now named):** *every number that appears on paper was minted or indexed in the fabric first.* Challan leaf, LR leaf, float_id. Paper carries numbers; paper never creates them. Any future document that needs a serial gets the same treatment — a leaf registry if pre-printed, a counter under LockService if not — and never a fourth paper book.
+
+---
+
+## AMENDMENT A19 (2026-09-12) — Owner-dictated awards get a second hand (extends D17/A2; corrects A5's premise)
+
+**New fact (Rahul, 2026-09-12):** the owner does not tap his own network's awards. He dictates the final agreed supplier price to RB Singh, who records it — and that recorded figure is what is later used to verify the supplier's bill. A5 gave the owner an account on the premise that he is the heaviest writer of awards. In practice he writes none.
+
+**Why this is the most serious fact found this week:** `traffichead@` therefore holds the pen on the entire strike ledger — TM-sourced deals (A2 already accepted that concentration) *and* owner-sourced deals. The original fraud this system exists to stop was a traffic person changing a number between the phone call and the register. Today the number the owner says and the number the Head writes are two different facts, and only the second is recorded. Because the recorded figure drives bill verification, an inflated transcription is paid.
+
+**Ruling — a two-hand rule that leaves the owner's habit alone:**
+- The Head enters the award as today, with `sourced_by_tm = OWNER` (the existing MCQ column gains that value; TM names remain for TM-sourced rows).
+- The row is born **UNCONFIRMED**. Dispatch proceeds at once — D17's "never slows anyone" holds; the ledger records instantly.
+- The owner **confirms by one tap** on his phone — the same mechanic D18 already gives him for every garage approval. The confirmation is a new STRIKE_LEDGER row, `event_type = OWNER_CONFIRM`, `refers_strike_id` → the award. Append-only is preserved; nothing is edited.
+- **What the confirmation gates is payment, not dispatch:** `billing.purchase@` cannot verify a supplier bill against an owner-sourced award that has no OWNER_CONFIRM row. An inflated transcription now requires the owner to tap yes to a number he did not say.
+- Owner-sourced rows are now separable in the monthly "cost of awarding fast" report (A16.2) by `sourced_by_tm = OWNER`, which the earlier practice made impossible.
+
+**Not chosen:** requiring the owner to tap the award himself. A17 and A18 both showed that a rule describing a handover that does not happen is not a control. Confirmation fits the habit; entry does not.
+
+**Gate tests G40–G42** (PHASE2_GATES.md §D). **Bottleneck note:** this adds to the owner's one-tap queue already accepted under D18; the same revisit trigger applies (>120 trucks, or when unconfirmed awards start delaying supplier payment beyond N=30).
+
+**Why it must not be reversed:** removing the confirm restores a ledger written entirely by the seat the original fraud came from, with the owner's own deals inside it and no record of what he actually said.
+
+---
+
+## AMENDMENT A20 (2026-09-12) — The breakdown call: intimation right goes to a named set of seats (resolves §5.12's delegation slot)
+
+**New fact (Rahul, 2026-09-12):** there is no fixed person for breakdown or accident calls. The driver calls everyone, starting with the owner, and talks to whoever picks up.
+
+**Ruling:** the fact becomes the rule. EXPENSE_INTIMATIONS may be written by any of **eight seats** — owner@, rahul@, rohit@, traffichead@, master.jnpt@, master.hazira@, tracker@, maintenance@ — under the login that took the call. (maintenance@ added by Rahul, 2026-09-12: breakdown calls routinely reach the maintenance desk. Safe despite that seat also recording the resulting job card, because cashier@ approves the expense (G17) and owner@ approves the job card (G19) — two independent hands already sit in that path. cashier@ was considered and deliberately excluded: he approves bucket-C spend, and the approver should not also be the intimator.) §5.12's "delegation slot" is removed; there is nothing to delegate because the right is already distributed. All other seats are refused (kam.*@, billing.*@, receivables@, supervisor@, cashier@ — none of them should be taking a breakdown call, and if one does, the fabric should say so).
+
+- The intimation screen must be on all eight phones, and it must be a 15-second entry (category, estimate, place — all MCQ). If it is slower than the phone call, it will not be used.
+- The **phone rota** — who is expected to be reachable at 2 a.m. — is a paper problem for the owner, not a register. Do not build a rota into the fabric.
+- D14 is unchanged: a bucket-C spend not intimated by any of the eight before the money moved is `POST_FACTO_FLAGGED` and needs Cashier override with reason. The monthly directors' report (A16.2) carries the count of POST_FACTO_FLAGGED rows; a rising count means calls are being taken by people outside the seven, or not logged.
+
+**Gate test G43** (PHASE2_GATES.md §E).
+
+---
+
+## AMENDMENT A21 (2026-09-12) — Two design rulings and the reset ritual
+
+**Ruling 1 (Rahul chose option A): the system re-hashes register contents to detect silent hand edits.** The hash chain protects AUDIT_LOG; it does not by itself see a cell changed directly in a register sheet by the file owner, whom Google will never lock out.
+- A nightly time-driven trigger hashes each of the **eleven append-only registers** (CLAUDE.md rule 2's ten + USERS_ROLES, which A8 made append-only and rule 2 omitted — corrected here) and appends one `REGISTER_SNAPSHOT` row per register to AUDIT_LOG. The snapshot hash therefore sits **inside the chain**: hiding a hand edit means editing the register *and* the snapshot *and* every hash after it.
+- On mismatch the next run appends `REGISTER_TAMPER` naming sheet and row, and `verify` reports it. Detection, not prevention — which is D17's spirit for the owner.
+- Non-append registers (masters, DO, CHALLAN, LR, floats, pouches) get a row-count and last-modified check nightly, not a full hash — they change legitimately all day.
+- Google's own revision history on each workbook is the free second witness; nobody, including the owner, can erase it. Any REGISTER_TAMPER is investigated there first.
+
+**Ruling 2 (Rahul): the ≤ 2-week backfill window is enforced in code.** The transcription door refuses any trip dated more than 14 days before `GO_LIVE_DATE`, a script property set on go-live morning as the third item of the ritual (with the JNPT book registration and the Hazira counter). Never set early.
+
+**Fact 3 (sixteen seats, sixteen humans):** confirmed as of 2026-09-12 with A13's merge reflected. It is a fact with a date: it is re-confirmed the morning the roster is seeded, and any merge found then deactivates one account per A8.
+
+**Fact 4 (password resets):** Rahul performs the 16 handover resets from `admin@` on the trusted device. Each reset is recorded on the corresponding USERS_ROLES custody row as `assigned_by = rahul@` — never admin@, which cannot write. The reset precedes the row's `role_from`; an account with prior data (kam.export@ was seen with usage) must not receive a `role_from` earlier than its own reset.
+
+**Gate tests G29, G30, G37, G38, G39** (PHASE2_GATES.md).
+
+**Why these must not be reversed:** without ruling 1 the owner's file ownership is an unmonitored back door into every ledger; without ruling 2 the two-week window is a promise, and promises about backfill are how a September-entered April trip becomes "live-supervised" data.
+
+---
+
+## AMENDMENT A22 (2026-09-12) — Invoice write-off and amount reduction require a director's approval row (closes the A13 single-seat exposure)
+
+**Ruled by Rahul, 2026-09-12.** A13 put collection and billing (sales) in one seat because they are one human. That is correct and stays. But it leaves `billing.sales@` as the only seat in the company that both raises an invoice and closes it, and the single act that seat could perform alone to lose money is quietly reducing or writing off what a client owes. Nobody downstream would see it: INVOICE_TRACKER is not append-only, and A21's nightly re-hash covers the append-only registers only.
+
+**Ruling:**
+- `collection_status = WRITTEN_OFF`, and any reduction of `invoice_amount` after `submitted_ts` is set, require an approval row from **rahul@ or rohit@**. Not owner@ — he is already the sole approver for every garage job (D18) and now every owner-sourced award (A19); receivables is the one queue he is not in, and §10 item 14 warns about that phone. Not billing.sales@ itself, obviously.
+- The approval is durable in two places: three new columns on §5.11 (`writeoff_approved_by` · `writeoff_approved_ts` · `writeoff_reason`, reason mandatory) **and** an `INVOICE_WRITEOFF_APPROVE` row in the hash-chained AUDIT_LOG — because INVOICE_TRACKER itself is mutable and gets only a row-count check under A21, the chained row is the evidence that survives.
+
+**Deliberately NOT gated: `DISPUTED`.** A dispute is a fact about the client's behaviour, not a reduction of what is owed, and it must be recordable the hour it happens or the receivables ageing lies. Requiring a director's tap to record a dispute would push disputes into somebody's memory — the disease this system exists to cure. Same principle as D17: let the event be recorded instantly, audit it afterwards. `PART_PAID` is likewise free.
+
+**Gate tests G44 (reject) and G45 (allow).** G45 is the negative control: without it, an over-tight implementation that blocks DISPUTED would pass the suite and break collections on day one.
+
+**Why it must not be reversed:** A13's one-seat ruling is only safe while the seat cannot move money on its own. Remove the director row and A13 becomes the single unguarded path from "client owes us" to "client doesn't", authored end to end by one login.

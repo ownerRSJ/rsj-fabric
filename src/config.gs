@@ -69,6 +69,14 @@ var CONFIG = {
   // legacy series; a letter prefix = that location's own series.
   CHALLAN_SERIES_PREFIX: { JNPT: '', HAZIRA: 'H' },
 
+  // A21 ruling 2: the third item of the go-live-morning ritual. The Phase 2
+  // transcription door refuses any trip dated more than BACKFILL_WINDOW_DAYS
+  // before this date - the <=2-week window is enforced in code, not promised,
+  // because a promise about backfill is how a September-entered April trip
+  // becomes "live-supervised" data. Never set early.
+  GO_LIVE_DATE_PROPERTY_KEY: 'GO_LIVE_DATE',
+  BACKFILL_WINDOW_DAYS: 14,
+
   /* ---- Cosmetic --------------------------------------------------------- */
 
   HEADER_BACKGROUND: '#274156',
