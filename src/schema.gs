@@ -365,8 +365,8 @@ var FABRIC_SCHEMA = {
         { h: 'ts', t: 'TS' }
       ] },
 
-    { name: 'CASH_FLOAT_REGISTER', ref: 'SCHEMA.md §5.8', appendOnly: false,
-      note: 'Voucher-at-handover rule: the advance is tapped by the Master in front of the driver at the moment of handover. The back-office evening voucher written from memory is abolished. A SHORT float is visible the day it happens.',
+    { name: 'CASH_FLOAT_REGISTER', ref: 'SCHEMA.md §5.8 (Amendment A17)', appendOnly: false,
+      note: 'THE FABRIC MINTS THE NUMBER BEFORE THE CASH LEAVES THE OFFICE (A17). The old "tapped in front of the driver" rule described a handover that does not happen at JNPT, where a bike runner carries the cash - about 25 times a day. Honesty now comes from ORDERING, not co-location: the record exists before the money moves, so it cannot be reconstructed afterwards to match whatever was spent. The paper slip carries a float_id the fabric minted; it never creates one. A row whose handover_ts precedes its issue_ts is rejected - that single check is what makes a back-dated voucher structurally impossible.',
       columns: [
         { h: 'float_id' },
         { h: 'issued_to' },
@@ -377,7 +377,14 @@ var FABRIC_SCHEMA = {
         { h: 'amount_accounted', t: 'MONEY' },
         { h: 'amount_returned',  t: 'MONEY' },
         { h: 'reconcile_status', t: 'LIST:RECONCILE_STATUS' },
-        { h: 'closed_ts', t: 'TS' }
+        { h: 'closed_ts', t: 'TS' },
+        // A17's five. handover_ts >= issue_ts is enforced by the Phase 2
+        // service layer (gate G25); the column exists here to hold it.
+        { h: 'handover_mode',     t: 'LIST:HANDOVER_MODE' },
+        { h: 'handover_ts',       t: 'TS' },
+        { h: 'driver_ack_method', t: 'LIST:FLOAT_ACK_METHOD' },
+        { h: 'driver_ack_ts',     t: 'TS' },
+        { h: 'absent_seat',       t: 'LIST:ABSENT_SEAT' }
       ] },
 
     { name: 'DOC_POUCH', ref: 'SCHEMA.md §5.9', appendOnly: false,

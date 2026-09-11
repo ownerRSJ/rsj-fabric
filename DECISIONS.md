@@ -240,3 +240,27 @@ Sharing a password without a custody row is never a fourth option.
 **Why A16 must not be reversed:** without §8 the first absence produces a shared password, and a shared password retroactively voids the audit trail that every other control in this system rests on (D10, D21). Without §9 the anti-fraud ledger is written by the people it watches and read by nobody — which is an archive, not a control.
 
 **Open item riding with A16 (owner to confirm, not blocking Phase 2):** on a cover day, can the Traffic Head physically be at the port to tap the driver's advance in front of him (§5.8's voucher-at-handover rule), or does a runner hand the cash and the tap happen later from the office? If the latter, a written one-day exception is required stating that `issue_ts` records the office tap with the handover evidenced on paper. Do not leave this to improvisation — the first improvised answer becomes permanent practice, and an evening voucher written from memory is precisely what §5.8 abolished.
+
+---
+
+## AMENDMENT A17 (2026-09-11) — Cash handover is digital-first: the fabric mints the number before the cash leaves (replaces §5.8's voucher-at-handover rule; closes ORG_STRUCTURE.md §7 item 5)
+
+**New fact that forced this (owner confirmed via Rahul, 2026-09-11):** at JNPT a **bike runner already carries the driver's advance on ordinary days**. The Master does not hand it over personally. This was discovered while drafting a one-day exception for the days the Master is absent — and it means §5.8's main rule, not its exception, was the clause describing a day that does not exist. The earlier draft regulated roughly one day a month and left roughly 25 handovers a day untouched.
+
+**What was asked for, and what was ruled instead.** The owner and Rahul agreed to "a written 1-day paper voucher exception." Two problems. First, a paper voucher can be written at any hour from memory, which is exactly the artifact the v3 rule abolished; legitimising it for one day legitimises it permanently. Second, and larger: an exception for absent days is the wrong instrument when the normal day has the same gap. **Ruling: the voucher stays digital and is minted before the cash leaves the office, every day. Paper is demoted to an acknowledgment of receipt.** The mechanics are written into SCHEMA.md §5.8 and are binding as written there.
+
+**Why the ordering rule is the right control.** The v3 rule tried to guarantee honesty by co-locating the tap and the handover — put the Master, the driver and the phone in the same place. That works only if the Master is in that place, and at JNPT he is not. The replacement guarantees honesty by **ordering** instead of co-location: the record exists before the money moves, so the record cannot be reconstructed after the fact to match whatever was spent. A17 gives up a weaker property nobody was achieving and buys a stronger one that survives the runner, the absent Master, and the busy day.
+
+**A6 is untouched.** Runners remain unnamed; ordinary-day shortages still resolve to the Master, because the Master is the login that minted the float row. Only cover days move custody, to cashier@, and only because there is no Master that day to carry it.
+
+**Acknowledgment method — for anyone tempted to improve it:** true OTP to the driver's phone is **not available**. Apps Script has no SMS path (MailApp only) and drivers hold no accounts. THUMB and PHONE_CONFIRMED are the two honest options. Do not write an OTP requirement into a screen that cannot deliver one.
+
+**Two gate tests added (Phase 2 now passes G1–G26):**
+- **G25** — create a CASH_FLOAT row whose `handover_ts` is earlier than its `issue_ts` → REJECT, in both handover modes.
+- **G26** — set `reconcile_status = BALANCED` on a row with `driver_ack_method = NONE`, or before the slip is recorded at the office → REJECT.
+
+**Build impact:** SCHEMA.md → **v6**. Five columns on §5.8 (header rewrite, flagged MIGRATED), three new dropdown lists, `verify` re-run. Unlike the withdrawn draft, this is **on the main path**, so Slice 1's Master screens must carry the one-tap acknowledgment step from the start — it is not a rare-case afterthought.
+
+**Why it must not be reversed:** the entire control is one ordering fact — the record exists before the money moves. Any reversal to "record it after, for speed on a busy day" restores the evening voucher written from memory, and does so on the busiest days, which are exactly the days worth stealing on.
+
+**Consequential defect flagged, not yet fixed (needs its own amendment):** A16's gate test **G22** assumes the Master normally taps the JNPT challan leaf and the Traffic Head does so only as cover. SCHEMA.md §8 and CONTEXT.md both place challan entry under Traffic, while ORG_STRUCTURE.md §5 step 4 places it with the Master. The two cannot both be right and Phase 2 gates cannot be written against a contradiction. Pending ruling, blocked on one fact: **where the printed JNPT challan book physically sits — office or port.**

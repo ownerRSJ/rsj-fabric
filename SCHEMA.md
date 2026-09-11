@@ -1,6 +1,9 @@
 # RSJ CARRIERS — MASTER SCHEMA (APPROVED)
-**Status: APPROVED — now at v5 (Amendments A14–A15, 2026-08-30). Checkpoints #1 and #2 closed. Phase 1 built and verified; Phase 2 authorized and unblocked. This file is the canonical schema; all code conforms to it. Changes require a versioned amendment, never a silent edit.**
-Date: 2026-08-13, last amended 2026-08-30 (v5) · Supersedes all SCHEMA_DRAFT_v* files (delete them from the project)
+**Status: APPROVED — now at v6 (Amendments A17–A22, 2026-09-12). Checkpoints #1 and #2 closed. Phase 1 built and verified; Phase 2 authorized and unblocked. This file is the canonical schema; all code conforms to it. Changes require a versioned amendment, never a silent edit.**
+Date: 2026-08-13, last amended 2026-09-12 (v6) · Supersedes all SCHEMA_DRAFT_v* files (delete them from the project)
+
+**CHANGELOG v5 → v6 (2026-09-11/12 — Amendments A17–A22)**
+1. **A17 — cash handover is digital-first.** §5.8's voucher-at-handover rule is replaced by an **ordering rule**: the fabric mints `float_id` before the cash leaves the office, every day, in both handover modes. Five new columns: `handover_mode` · `handover_ts` (must be ≥ `issue_ts`) · `driver_ack_method` · `driver_ack_ts` · `absent_seat`. Paper is demoted to an acknowledgment of receipt; no numbered voucher book is ever created.
 
 **CHANGELOG v4 → v5 (2026-08-30 — Amendments A14–A15, challan per-series redesign)**
 1. **A14 — challan birth is PER-SERIES.** JNPT is leaf-tracked from the printed paper book (**bare numeric**, no `J` prefix — the printer mints, the fabric indexes); Hazira is fabric-minted `H<number>`; future bases get their own letter prefix + counter. `challan_no` is now an **alphanumeric** PK, globally unique across series. CHALLAN_REGISTER gains `challan_series` + `challan_seq` (text-sorting lies: "H9999" > "H10000"). NEW register **§5.15 CHALLAN_BOOK_REGISTRY** (books + leaves, on the §5.5 pattern). **`CHALLAN_SEED` retired.**
@@ -218,9 +221,25 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 > **Bucket rules (D16):** A auto-fills from DRIVER_ADVANCE_RATE_CARD — one row per trip, no receipts, never itemized. B requires receipt_status = HAS_RECEIPT before the linked invoice can reach ANNEXURE_COMPLETE. C requires intimation.
 
 ### 5.8 CASH_FLOAT_REGISTER — *field cash custody (Masters & drivers)*
-`float_id (PK) · issued_to (Master email / driver_id) · challan_no (nullable — trip-specific or general float) · amount_issued · issued_by (Cashier) · issue_ts · amount_accounted (Σ approved expenses against it) · amount_returned · reconcile_status (OPEN / BALANCED / SHORT / EXCESS) · closed_ts`
+`float_id (PK) · issued_to (Master email / driver_id) · challan_no (nullable — trip-specific or general float) · amount_issued · issued_by (Cashier) · issue_ts · amount_accounted (Σ approved expenses against it) · amount_returned · reconcile_status (OPEN / BALANCED / SHORT / EXCESS) · closed_ts · handover_mode (DIRECT_TAP / RUNNER_RELAY — A17) · handover_ts (must be ≥ issue_ts) · driver_ack_method (THUMB / PHONE_CONFIRMED / NONE) · driver_ack_ts · absent_seat (MASTER_JNPT / MASTER_HAZIRA / NONE)`
 > Closes the loop your Masters live in: cash out → receipts back → invoice annexure. A SHORT float is visible the day it happens, not at year-end.
-> **Voucher-at-handover rule (v3):** the advance entry is tapped by the Master in front of the driver at the moment of handover (`issue_ts` = the handover). Amount pre-fills from the rate card. The back-office evening voucher written from memory is abolished.
+> **Handover rule (v3 rule replaced by A17).** The original rule — the Master taps the advance in front of the driver, `issue_ts` = the handover — described a handover that does not happen at JNPT, where a bike runner carries the cash to the driver on ordinary days. A rule that describes a day nobody has is not a control. It is replaced by an **ordering rule**, which holds on every day, in both modes:
+>
+> **The fabric mints the number before the cash leaves the office.**
+>
+> 1. Before any cash is released, the issuing seat mints the CASH_FLOAT row — master.jnpt@ / master.hazira@ on an ordinary day, cashier@ on a cover day (§8 of ORG_STRUCTURE.md), issued to the `driver_id`. The fabric returns `float_id`. Amount pre-fills from DRIVER_ADVANCE_RATE_CARD.
+> 2. `float_id` and the amount are written on the acknowledgment slip that travels with the cash. **The slip carries a number the fabric minted; it is never the source of one.** A slip without a valid, open `float_id` is self-evidently fake — the number cannot be invented at the roadside.
+> 3. `handover_mode` records how it reached the driver: **DIRECT_TAP** (the issuing seat hands it over personally) or **RUNNER_RELAY** (a runner carries it — the normal JNPT path).
+> 4. The driver acknowledges: thumb impression on the slip, or **PHONE_CONFIRMED** — the driver confirms the amount to the issuing seat by phone on his registered number, which is required whenever the amount differs from the rate card. `driver_ack_method` and `driver_ack_ts` are recorded **the same day**, never the next morning.
+> 5. `handover_ts` records when the cash reached the driver. **A row whose `handover_ts` precedes its `issue_ts` is rejected.** This single check is what makes a back-dated voucher structurally impossible rather than merely forbidden, and it is the control that replaces "tapped in front of the driver".
+> 6. The row cannot reach `reconcile_status = BALANCED` until the physical slip is at the office and checked against the row. A mismatch raises a DISCREPANCY_LOG row — never a silent correction.
+>
+> **Custody.** On an ordinary day the float is issued by the Master, so A6 is untouched: a shortage resolves to the Master alone, runners stay unnamed. On a **cover day** there is no Master to resolve to, so the cash belongs to the **issuing login (cashier@)** until the acknowledgment returns. `absent_seat` marks those rows.
+>
+> **Volume.** This is roughly 25 handovers a day at JNPT, not an occasional event. The Master's screen must record an acknowledgment in **one tap** against an open float row, and slips must be pre-printed with a blank for `float_id`. If recording an acknowledgment takes longer than the handover itself, the rule will be defeated by the end of the first week.
+>
+> **The monthly directors' report (A16.2) carries three counts:** RUNNER_RELAY rows with no same-day acknowledgment · rows that reached BALANCED without a slip at the office · cover-day rows. Rising counts mean the ordering is being worked around.
+> **Do NOT create a numbered paper voucher book — `float_id` is the number.** A fourth paper book is the failure this amendment exists to prevent.
 
 ### 5.9 DOC_POUCH — *per-trip document & receipt chase*
 `doc_id (PK) · challan_no (FK) · doc_type (LR_DUPLICATE / WEIGHMENT_SLIP / EIR / POD / PARKING_RECEIPT / EMPTY_YARD_RECEIPT / REPAIR_BILL / OTHER) · expected (bool) · status (PENDING / WITH_DRIVER / WITH_MASTER / AT_OFFICE / ATTACHED_TO_INVOICE / LOST) · holder · status_ts · required_for_invoice (bool)`

@@ -176,6 +176,22 @@ var LISTS = {
 
     RECONCILE_STATUS: ['OPEN', 'BALANCED', 'SHORT', 'EXCESS'],
 
+    // A17: how the cash actually reached the driver. RUNNER_RELAY is the
+    // NORMAL path at JNPT - a bike runner carries it - which is why the old
+    // "tapped in front of the driver" rule described a day nobody has.
+    HANDOVER_MODE: ['DIRECT_TAP', 'RUNNER_RELAY'],
+
+    // A17: true OTP is impossible here - Apps Script has no SMS path and
+    // drivers hold no accounts. THUMB and PHONE_CONFIRMED are the two honest
+    // options. NONE is invalid once cash has been released.
+    FLOAT_ACK_METHOD: ['THUMB', 'PHONE_CONFIRMED', 'NONE'],
+
+    // A17: marks cover-day custody. On an ordinary day the Master minted the
+    // row so a shortage resolves to him (A6 untouched); on a cover day there
+    // is no Master, so the cash belongs to the issuing login until the
+    // acknowledgment returns.
+    ABSENT_SEAT: ['MASTER_JNPT', 'MASTER_HAZIRA', 'NONE'],
+
     DOC_TYPE: [
       'LR_DUPLICATE',
       'WEIGHMENT_SLIP',
