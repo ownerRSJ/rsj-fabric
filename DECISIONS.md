@@ -264,3 +264,23 @@ Sharing a password without a custody row is never a fourth option.
 **Why it must not be reversed:** the entire control is one ordering fact — the record exists before the money moves. Any reversal to "record it after, for speed on a busy day" restores the evening voucher written from memory, and does so on the busiest days, which are exactly the days worth stealing on.
 
 **Consequential defect flagged, not yet fixed (needs its own amendment):** A16's gate test **G22** assumes the Master normally taps the JNPT challan leaf and the Traffic Head does so only as cover. SCHEMA.md §8 and CONTEXT.md both place challan entry under Traffic, while ORG_STRUCTURE.md §5 step 4 places it with the Master. The two cannot both be right and Phase 2 gates cannot be written against a contradiction. Pending ruling, blocked on one fact: **where the printed JNPT challan book physically sits — office or port.**
+
+---
+
+## AMENDMENT A18 (2026-09-12) — Challan is an office document, LR is a field document (resolves the §8 / ORG_STRUCTURE §5 contradiction; corrects A16's G22)
+
+**New fact that forced this (owner confirmed via Rahul, 2026-09-12):** the printed JNPT challan book is **physically kept in the Sanpada office**, not at the port.
+
+**The contradiction it resolves.** SCHEMA.md §8 gave CHALLAN_BOOK_REGISTRY write to the Traffic Head and read-only to the Masters, and both CONTEXT.md and the v3 changelog record that challan entry moved "under Traffic" when the Purchase Manager's seat was dissolved. ORG_STRUCTURE.md §5 step 4, as first written, had the Master tapping the challan leaf at dispatch. A16's gate test G22 was written on that second reading and treated the Traffic Head's challan tap as *cover* for an absent Master. Both readings cannot be true, and Phase 2 gates cannot be written against a contradiction.
+
+**Ruling:**
+- **The challan is an office document.** traffichead@ taps the next BLANK leaf of the ACTIVE JNPT book from the Sanpada office and writes the number on the paper challan there; for Hazira he triggers the `H<number>` counter. CHALLAN_REGISTER rows are born RELEASED under his login. Masters read CHALLAN_BOOK_REGISTRY and never write it. This is not cover; it is his ordinary job on every day.
+- **The LR is a field document.** The LR book is per-location with its Master (A6, D3). master.jnpt@ / master.hazira@ tap the next BLANK leaf of their own book and write the LR row **in the same action** — one hand, one number, no relay.
+- **The two documents meet by selection, never by typing.** The Master's LR screen offers only challans in status RELEASED that still lack their full LR set; he picks one. There is no free-text challan field anywhere a Master can reach. This is the same zero-re-keying principle as D7 (RSJ-DO picked from a list), applied one level down.
+- **Cover (§8 of ORG_STRUCTURE.md) is therefore about the LR only.** On a Master's absent day traffichead@ taps the next BLANK LR leaf of that port's book and writes the LR row under his own login. This needs W on LR_BOOK_REGISTRY leaves and LR_REGISTER, which §8 of SCHEMA.md previously withheld from him — corrected by this amendment. Granted unconditionally, not "on cover days" — a conditional permission is a second identity system, and G14 already prevents the only real danger (a Master reaching into the other Master's book).
+
+**Gate tests corrected and added:** G15 and G16 now name traffichead@ as the requester and add the Master's REJECT case; G22 is rewritten to the LR-only cover; **G27** (Master types or picks a non-RELEASED challan → REJECT) and **G28** (Master writes a challan leaf → REJECT) are added. Phase 2 passes **G1–G28**.
+
+**Why it must not be reversed:** putting the challan tap at the port would require either moving the paper book to the port (two hands in one book — the drift A14 exists to prevent) or phoning the number from the office to the port to be written by hand — a relay of a minted number, which is the re-keying disease in its purest form. Keeping the tap where the book physically is costs nothing and closes both.
+
+**Standing principle this amendment makes explicit (already true of A14, D3 and A17, now named):** *every number that appears on paper was minted or indexed in the fabric first.* Challan leaf, LR leaf, float_id. Paper carries numbers; paper never creates them. Any future document that needs a serial gets the same treatment — a leaf registry if pre-printed, a counter under LockService if not — and never a fourth paper book.

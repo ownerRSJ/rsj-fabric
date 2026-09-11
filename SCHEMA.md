@@ -4,6 +4,7 @@ Date: 2026-08-13, last amended 2026-09-12 (v6) · Supersedes all SCHEMA_DRAFT_v*
 
 **CHANGELOG v5 → v6 (2026-09-11/12 — Amendments A17–A22)**
 1. **A17 — cash handover is digital-first.** §5.8's voucher-at-handover rule is replaced by an **ordering rule**: the fabric mints `float_id` before the cash leaves the office, every day, in both handover modes. Five new columns: `handover_mode` · `handover_ts` (must be ≥ `issue_ts`) · `driver_ack_method` · `driver_ack_ts` · `absent_seat`. Paper is demoted to an acknowledgment of receipt; no numbered voucher book is ever created.
+2. **A18 — the challan is an office document, the LR is a field document.** The printed JNPT book sits in the Sanpada office, so traffichead@ taps the challan leaf every day (not as cover); Masters read the challan registry and never write it. Masters tap their own LR leaf and write the LR row in one action. The two documents meet **by selection, never by typing** — the LR screen offers only RELEASED challans. §8 matrix corrected: CHALLAN/LR split into two rows, and the Traffic Head gains W on LR_REGISTER and LR book leaves for cover days. Standing principle named: **every number that appears on paper was minted or indexed in the fabric first.**
 
 **CHANGELOG v4 → v5 (2026-08-30 — Amendments A14–A15, challan per-series redesign)**
 1. **A14 — challan birth is PER-SERIES.** JNPT is leaf-tracked from the printed paper book (**bare numeric**, no `J` prefix — the printer mints, the fabric indexes); Hazira is fabric-minted `H<number>`; future bases get their own letter prefix + counter. `challan_no` is now an **alphanumeric** PK, globally unique across series. CHALLAN_REGISTER gains `challan_series` + `challan_seq` (text-sorting lies: "H9999" > "H10000"). NEW register **§5.15 CHALLAN_BOOK_REGISTRY** (books + leaves, on the §5.5 pattern). **`CHALLAN_SEED` retired.**
@@ -203,6 +204,8 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 > **Cancelled leaves are registry rows, never CHALLAN_REGISTER rows (A14).** A cancelled leaf never became a trip, so it must not occupy a trip row — it lives in §5.15 Leaves with its mandatory reason.
 
 ### 5.4 LR_REGISTER
+> `challan_no` is picked from RELEASED challans on the LR screen — there is no typed challan field (A18, G27).
+
 `lr_no (PK) · challan_no (FK) · rsj_do_id (FK) · container_no · consignor · consignee · from_loc · to_loc · lr_date · stuffing_date (export) · loading_date (export) · status (ACTIVE / CANCELLED / REPLACED) · replaces_lr_no (nullable) · replace_reason (ACCIDENT / REROUTE / TRANSSHIP / ERROR) · ecount_sync (PENDING / PUSHED / CONFIRMED) · created_by · ts`
 
 ### 5.5 LR_BOOK_REGISTRY
@@ -270,6 +273,7 @@ All counters live in `ID_COUNTERS` and are incremented inside a script lock (rac
 > Rules: **one ACTIVE book per series**; a leaf goes BLANK→USED exactly once (duplicate use structurally rejected); CANCELLED requires a reason and appears on an exceptions view; the dispatch screen offers the **next BLANK leaf only** — no typing.
 > The printer pre-prints strict serials on the paper book, so the fabric cannot mint what already exists on paper. This register makes the fabric the book's *index* rather than a competing numbering machine — the same logic that makes the paper LR book the LR mint (D3). Fabric and book cannot drift, because the fabric is describing the book.
 > Hazira has no paper book and therefore no rows here — it mints from a counter (§3.5).
+> The JNPT printed book is physically kept in the Sanpada office; the dispatch tap is the Traffic Head's, never the Master's (A18).
 
 ---
 
@@ -328,8 +332,9 @@ R=read, W=write(append), A=approve, ✕=no access. Directors/Owner = full. VIEW_
 | CONTRACT_RATES | ✕ | R | ✕ | ✕ | ✕ | ✕ | R* | ✕ | ✕ |
 | STRIKE_LEDGER | ✕ | W+A | W | ✕ | ✕ | ✕ | ✕ | ✕ | ✕ |
 | Margin view | ✕ | R | ✕ | ✕ | ✕ | ✕ | ✕ | ✕ | ✕ |
-| CHALLAN / LR | R | W | W | R | R | ✕ | R | R | ✕ |
-| LR_BOOK_REGISTRY | ✕ | R | R | W | R | ✕ | ✕ | ✕ | ✕ |
+| CHALLAN_REGISTER | R | W | W | R | R | ✕ | R | R | ✕ |
+| LR_REGISTER | R | W (cover days, §8 of ORG_STRUCTURE.md) | W | W | R | ✕ | R | R | ✕ |
+| LR_BOOK_REGISTRY | ✕ | W (leaves, cover days only) | R | W | R | ✕ | ✕ | ✕ | ✕ |
 | CHALLAN_BOOK_REGISTRY (§5.15) | ✕ | W | W | R | R | ✕ | ✕ | ✕ | ✕ |
 | TRIP_EVENTS | R | R | W | W | R+VERIFY | ✕ | R | ✕ | ✕ |
 | TRIP_EXPENSES | ✕ | R | R | W | R | A | R | ✕ | ✕ |
