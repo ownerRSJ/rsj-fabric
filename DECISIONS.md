@@ -189,3 +189,54 @@ Ruled at Checkpoint #2: the Collection Head and the Billing head are the **same 
 - **Seeding happens on GO-LIVE MORNING, not before.** At ~100 challans consumed per 2–3 days, any number captured earlier is stale by lunch. The ritual (replaces DEPLOY.md step 6): (1) register the JNPT book currently in play — its printed range and the next blank leaf as of that morning; (2) set the Hazira counter to that morning's next number. Both entered as Script Properties / registry rows by the owner-supplied values, never invented.
 
 **Why it must not be reversed:** seeding early or seeding historically mints numbers that collide with paper already written — the duplicate error comes from inside the house.
+
+---
+
+## AMENDMENT A16 (2026-09-11) — Org structure ratified · seat-cover rules · standing strike-ledger report
+
+**Signed off by Rahul, 2026-09-11.** `ORG_STRUCTURE.md` moves from PROPOSED to **APPROVED** and becomes the canonical org reference for the fabric. Its §1 rulings R1–R9 (Master split by location not direction · Tracker retained under Traffic · three money flows but two seats · Supervisor and Cashier cross-cutting · billing.purchase in the finance layer · no EWB clerk seat · Traffic Managers as boxes with no logins · drivers on a dual line · "TO-PAY" is an attribute not a role) are ratified as written. The older `rsj_pipeline_refined.png` is **retired** and must never be used as a reference again — it names seats that do not exist.
+
+Two gaps were found by drawing the structure out, and both are closed here.
+
+### A16.1 — Seat cover: the deputy clause
+
+**The gap:** sixteen seats, sixteen humans, no cover, and D21 forbids shared logins. The day a Master is absent, either dispatch stops or somebody borrows a password — and a borrowed password nullifies every ledger row written that day. Nothing in the roster said which.
+
+**Ruling — cover has three shapes, in strict preference order:**
+1. **COVER UNDER OWN LOGIN (default).** A seat that already holds the permission does the work as itself. Attribution stays truthful, no seat goes dark, no password moves.
+2. **CUSTODY SWAP (last resort).** A real A8 handover: closing row + new row in USERS_ROLES with `assigned_by`, the covering human's own row set inactive for the duration (one human never holds two active writing accounts), password reset on return.
+3. **STOP.** The work waits, where waiting costs nothing.
+
+Sharing a password without a custody row is never a fourth option.
+
+| Seat | Rule | Cover |
+|---|---|---|
+| master.jnpt@ | Cover under own login | traffichead@ taps the challan/LR leaf; cashier@ issues the float direct to `driver_id`; receipts transcribed on return as `LR_TRANSCRIBED` |
+| master.hazira@ | Cover under own login | Same — and the only way a Hazira `H<number>` gets minted that day |
+| kam.import@ | Cover under own login | kam.export@ (direction is a DO column, not a permission) |
+| kam.export@ | Cover under own login | kam.import@, mirrored |
+| tracker@ | Stop, ceiling 2 working days | Nobody else writes `PHONE_REPORTED`; the worklist ages visibly |
+| cashier@ | **Custody swap, named** | rahul@ (fallback rohit@). Float at handover cannot wait; no other seat approves bucket-C |
+
+**Barred covers for cashier@, permanently:** traffichead@ (award + cash in one hand) and billing.purchase@ (bill verification + payment in one hand). A cover rule that re-merges two deliberately segregated seats is worse than a stopped day, because the stopped day is visible and the merge is not.
+
+**Duration ceiling: 2 working days.** Beyond that the owner assigns a custody row to a director. Reason: the Traffic Head covering a Master concentrates award and dispatch in one hand — tolerable for a day under his own name with the strike ledger still append-only, not for a week.
+
+**Build impact: none beyond gate tests.** Cover is a permissions fact, not a feature. Any proposal for a "delegation screen" is refused — that is a second identity system beside USERS_ROLES.
+
+**Three gate tests added to `ORG_STRUCTURE.md` §6; Phase 2 now passes G1–G24, not G1–G21:**
+- **G22** — traffichead@ taps the next BLANK JNPT challan and LR leaf and mints a Hazira challan → ALLOW. G14's "own book only" binds the two Masters to each other's books, never the Traffic Head.
+- **G23** — kam.export@ writes a DO with `direction=IMPORT` → ALLOW. Scoping KAM writes by direction would make mutual cover impossible.
+- **G24** — rahul@ holds cashier@ via a custody row while his own row is inactive → cashier@ writes ALLOW, rahul@ writes REJECT.
+
+### A16.2 — The strike ledger acquires a reader
+
+**The gap:** margin is computable by exactly four logins — owner@, rahul@, rohit@, traffichead@ — and **two of them write the awards**. The only independent readers are the two directors, and no seat had a *duty* to look. The Supervisor, the single cross-cutting verifier, is deliberately rate-blind (G6). D17's monthly "cost of awarding fast" report was a report someone had to remember to run.
+
+**Ruling:** the monthly HEAD report becomes a **scheduled Apps Script trigger**, mailing **rahul@ and rohit@ on the 1st of every month**, unrequested. A month with nothing to report still sends the mail — an empty report proves the trigger is alive, a missing report is indistinguishable from a disabled one. It lands with **Slice 2** (it needs live STRIKE_LEDGER data); until then the duty is manual and sits with rahul@.
+
+**Never reversible to "on request":** the person who stops triggering it would be the person the ledger exists to watch. **And the fix is never to give the Supervisor rate visibility** — that hands margin to the seat that talks to every department daily, widening the collusion surface instead of closing it.
+
+**Why A16 must not be reversed:** without §8 the first absence produces a shared password, and a shared password retroactively voids the audit trail that every other control in this system rests on (D10, D21). Without §9 the anti-fraud ledger is written by the people it watches and read by nobody — which is an archive, not a control.
+
+**Open item riding with A16 (owner to confirm, not blocking Phase 2):** on a cover day, can the Traffic Head physically be at the port to tap the driver's advance in front of him (§5.8's voucher-at-handover rule), or does a runner hand the cash and the tap happen later from the office? If the latter, a written one-day exception is required stating that `issue_ts` records the office tap with the handover evidenced on paper. Do not leave this to improvisation — the first improvised answer becomes permanent practice, and an evening voucher written from memory is precisely what §5.8 abolished.
